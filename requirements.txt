@@ -1,0 +1,6 @@
+python-telegram-bot
+httpx
+beautifulsoup4
+flask
+asyncio
+requests
