@@ -13,9 +13,8 @@ from flask import Flask
 import threading
 from urllib.parse import urljoin
 from datetime import datetime, timedelta, timezone
-# New library added
 from telegram.ext import Application, CommandHandler, ContextTypes
-from telegram import Update
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 
 # ================= KEEP ALIVE =================
 app = Flask(__name__)
@@ -32,18 +31,14 @@ def keep_alive():
     t.daemon = True
     t.start()
     
-# --- Configuration (Fill in your details) ---
-# Your Telegram Bot Token here. You can get it from BotFather.
-# Example: YOUR_BOT_TOKEN = "1234567890:ABC-DEF1234ghIkl-zyx57W2v1u123ew11"
-YOUR_BOT_TOKEN = "8393297595:AAEksSfupLmn5qeBxjoGT3c9IzaJaLI6mck" # <--- This line needs to be changed
+# --- Configuration ---
+YOUR_BOT_TOKEN = "8393297595:AAEksSfupLmn5qeBxjoGT3c9IzaJaLI6mck"
 
-# ==================== New Addition: Multiple Admin IDs ====================
-# Add your and other admins' Telegram User IDs to the list below
-ADMIN_CHAT_IDS = ["7095358778"] # Example: ["YOUR_ADMIN_USER_ID_1", "YOUR_ADMIN_USER_ID_2"]
-# =================================================================
+# ==================== Multiple Admin IDs ====================
+ADMIN_CHAT_IDS = ["7095358778"] 
 
 # Old chat IDs kept for the first run
-INITIAL_CHAT_IDS = ["-1003007557624"] 
+INITIAL_CHAT_IDS = ["-1002827526018"] 
 
 LOGIN_URL = "https://ivas.tempnum.qzz.io/login"
 BASE_URL = "https://ivas.tempnum.qzz.io"
@@ -52,12 +47,16 @@ SMS_API_ENDPOINT = "https://ivas.tempnum.qzz.io/portal/sms/received/getsms"
 USERNAME = "sagorsakh8@gmail.com"
 PASSWORD = "61453812Sa@"
 
-# Fast polling interval (10 seconds) with session caching for quick OTP delivery
 POLLING_INTERVAL_SECONDS = 10 
-# STATE_FILE name changed
 STATE_FILE = "processed_sms_ids.json" 
-CHAT_IDS_FILE = "chat_ids.json" # New file for saving chat IDs
-SESSION_FILE = "session_cookies.pkl" # Session storage for faster login
+CHAT_IDS_FILE = "chat_ids.json" 
+SESSION_FILE = "session_cookies.pkl" 
+
+# --- Buttons Configuration ---
+# আপনি যেভাবে ছবি ও টেক্সটে চেয়েছেন
+NUMBER_BOT_URL = "https://t.me/Ah_method_number_bot"
+DISCUSSION_GROUP_URL = "https://t.me/blackotpnum"
+DEVELOPER_URL = "https://t.me/sadhin8miya"
 
 # List of countries
 COUNTRY_CODES = {
@@ -110,22 +109,19 @@ COUNTRY_CODES = {
     '995': ('Georgia', '🇬🇪'), '996': ('Kyrgyzstan', '🇰🇬'), '998': ('Uzbekistan', '🇺🇿'),
 }
 
-# Create COUNTRY_FLAGS dictionary from COUNTRY_CODES
 COUNTRY_FLAGS = {name: flag for code, (name, flag) in COUNTRY_CODES.items()}
 
-# Service Keywords (for identifying service from SMS text)
-# Major services support multiple languages (Arabic, Bengali, Hindi, etc.)
 SERVICE_KEYWORDS = {
     "WhatsApp": ["whatsapp", "واتساب", "واتس اب", "হোয়াটসঅ্যাপ", "व्हाट्सएप", "вотсап"],
-    "Telegram": ["telegram", "تيليجرام", "تلغرام", "টেলিগ্রাম", "टेलीग्राम", "телеграм"],
+    "Telegram": ["telegram", "تيليجرام", "تلغرام", "টেলিগ্রাম", "টেলিগ্রাম", "телеграм"],
     "Facebook": ["facebook", "فيسبوك", "ফেসবুক", "फेसबुक"],
     "Google": ["google", "gmail", "جوجل", "গুগল", "गूगल"],
     "Instagram": ["instagram", "انستقرام", "انستجرام", "ইনস্টাগ্রাম", "इंस्टाग्राम"],
     "Twitter": ["twitter", "تويتر", "টুইটার", "ट्विटर"],
     "X": ["x", "إكس"],
-    "Messenger": ["messenger", "meta", "ماسنجر", "مسنجر", "মেসেঞ্জার"],
-    "TikTok": ["tiktok", "تيك توك", "টিকটক", "टिकटॉक"],
-    "Snapchat": ["snapchat", "سناب شات", "سناب", "স্ন্যাপচ্যাট"],
+    "Messenger": ["messenger", "meta", "ماسنجر", "مسنجর", "মেসেঞ্জার"],
+    "TikTok": ["tiktok", "تيك توك", "টিকটক", "টিকটॉक"],
+    "Snapchat": ["snapchat", "سناب شات", "সناب", "স্ন্যাপচ্যাট"],
     "Amazon": ["amazon"],
     "Netflix": ["netflix"],
     "LinkedIn": ["linkedin"],
@@ -199,7 +195,6 @@ SERVICE_KEYWORDS = {
     "Unknown": ["unknown"]
 }
 
-# Service Emojis (for display in Telegram messages)
 SERVICE_EMOJIS = {
     "Telegram": "📩", "WhatsApp": "🟢", "Facebook": "📘", "Instagram": "📸", "Messenger": "💬",
     "Google": "🔍", "Gmail": "✉️", "YouTube": "▶️", "Twitter": "🐦", "X": "❌",
@@ -219,7 +214,6 @@ SERVICE_EMOJIS = {
     "Viber": "📞", "Line": "💬", "WeChat": "💬", "VK": "🌐", "Unknown": "❓"
 }
 
-# --- Chat ID Management Functions ---
 def load_chat_ids():
     if not os.path.exists(CHAT_IDS_FILE):
         with open(CHAT_IDS_FILE, 'w') as f:
@@ -235,7 +229,6 @@ def save_chat_ids(chat_ids):
     with open(CHAT_IDS_FILE, 'w') as f:
         json.dump(chat_ids, f, indent=4)
 
-# --- New Telegram Command Handlers ---
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.message.from_user.id
     if str(user_id) in ADMIN_CHAT_IDS:
@@ -302,7 +295,6 @@ async def list_chats_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
     else:
         await update.message.reply_text("No chat IDs registered.")
 
-# --- Core Functions ---
 def escape_markdown(text):
     escape_chars = r'\_*[]()~`>#+-=|{}.!'
     return re.sub(f'([{re.escape(escape_chars)}])', r'\\\1', str(text))
@@ -318,11 +310,8 @@ def save_processed_id(sms_id):
     processed_ids.add(sms_id)
     with open(STATE_FILE, 'w') as f: json.dump(list(processed_ids), f)
 
-# --- Session Management Functions ---
 def save_session(cookies):
-    """Save session cookies to file for reuse"""
     try:
-        # Convert httpx.Cookies to a list of tuples to avoid conflicts
         cookie_list = [(cookie.name, cookie.value, cookie.domain, cookie.path) 
                        for cookie in cookies.jar]
         with open(SESSION_FILE, 'wb') as f:
@@ -332,14 +321,12 @@ def save_session(cookies):
         print(f"⚠️ Failed to save session: {e}")
 
 def load_session():
-    """Load saved session cookies"""
     if not os.path.exists(SESSION_FILE):
         return None
     try:
         with open(SESSION_FILE, 'rb') as f:
             cookie_list = pickle.load(f)
         print("🔓 Loaded saved session!")
-        # Convert list back to dict format for httpx
         cookies_dict = {name: value for name, value, domain, path in cookie_list}
         return cookies_dict
     except Exception as e:
@@ -347,7 +334,6 @@ def load_session():
         return None
 
 def clear_session():
-    """Clear saved session"""
     if os.path.exists(SESSION_FILE):
         os.remove(SESSION_FILE)
         print("🗑️ Session cleared!")
@@ -355,8 +341,8 @@ def clear_session():
 async def fetch_sms_from_api(client: httpx.AsyncClient, headers: dict, csrf_token: str):
     all_messages = []
     try:
-        today = datetime.now(timezone.utc)  # Using UTC time
-        start_date = today - timedelta(days=1) # Data for the last 24 hours
+        today = datetime.now(timezone.utc)
+        start_date = today - timedelta(days=1)
         from_date_str, to_date_str = start_date.strftime('%m/%d/%Y'), today.strftime('%m/%d/%Y')
         first_payload = {'from': from_date_str, 'to': to_date_str, '_token': csrf_token}
         summary_response = await client.post(SMS_API_ENDPOINT, headers=headers, data=first_payload)
@@ -387,7 +373,7 @@ async def fetch_sms_from_api(client: httpx.AsyncClient, headers: dict, csrf_toke
                     sms_text_p = card.find('p', class_='mb-0')
                     if sms_text_p:
                         sms_text = sms_text_p.get_text(separator='\n').strip()
-                        date_str = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')  # Using UTC time
+                        date_str = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
                         
                         country_name_match = re.match(r'([a-zA-Z\s]+)', group_id)
                         if country_name_match: country_name = country_name_match.group(1).strip()
@@ -404,15 +390,10 @@ async def fetch_sms_from_api(client: httpx.AsyncClient, headers: dict, csrf_toke
                         unique_id = f"{phone_number}-{sms_text}"
                         flag = COUNTRY_FLAGS.get(country_name, "🏴‍☠️")
                         
-                        # Using 'sms_text' instead of 'full_sms_text'
                         all_messages.append({"id": unique_id, "time": date_str, "number": phone_number, "country": country_name, "flag": flag, "service": service, "code": code, "full_sms": sms_text}) 
         return all_messages
-    except httpx.RequestError as e:
-        print(f"❌ Network issue (httpx): {e}")
-        return []
     except Exception as e:
         print(f"❌ Error fetching or processing API data: {e}")
-        traceback.print_exc()
         return []
 
 async def send_telegram_message(context: ContextTypes.DEFAULT_TYPE, chat_id: str, message_data: dict):
@@ -421,12 +402,9 @@ async def send_telegram_message(context: ContextTypes.DEFAULT_TYPE, chat_id: str
         country_name, flag_emoji = message_data.get("country", "N/A"), message_data.get("flag", "🏴‍☠️")
         service_name, code_str = message_data.get("service", "N/A"), message_data.get("code", "N/A")
         full_sms_text = message_data.get("full_sms", "N/A")
-        
-        # Add service emoji
-        service_emoji = SERVICE_EMOJIS.get(service_name, "❓") # If service not found, show '❓'
+        service_emoji = SERVICE_EMOJIS.get(service_name, "❓")
 
-        # Message format reverted to previous state with extra spacing
-        full_message = (f"🔔 *You have successfully received OTP*\n\n" 
+        full_message = (f"🔔 *New OTP Received*\n\n" 
                         f"📞 *Number:* `{escape_markdown(number_str)}`\n" 
                         f"🔑 *Code:* `{escape_markdown(code_str)}`\n" 
                         f"🏆 *Service:* {service_emoji} {escape_markdown(service_name)}\n" 
@@ -434,141 +412,88 @@ async def send_telegram_message(context: ContextTypes.DEFAULT_TYPE, chat_id: str
                         f"⏳ *Time:* `{escape_markdown(time_str)}`\n\n" 
                         f"💬 *Message:*\n" 
                         f"```\n{full_sms_text}\n```")
-        
-        await context.bot.send_message(chat_id=chat_id, text=full_message, parse_mode='MarkdownV2')
+
+        # ================= NEW: Inline Keyboard Buttons =================
+        keyboard = [
+            [
+                InlineKeyboardButton("🤖 Number Bot", url=NUMBER_BOT_URL),
+                InlineKeyboardButton("💬 Discussion Group", url=DISCUSSION_GROUP_URL)
+            ],
+            [
+                InlineKeyboardButton("🛠️ Developer", url=DEVELOPER_URL)
+            ]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        # ===============================================================
+
+        await context.bot.send_message(
+            chat_id=chat_id, 
+            text=full_message, 
+            parse_mode='MarkdownV2',
+            reply_markup=reply_markup
+        )
     except Exception as e:
         print(f"❌ Error sending message to chat ID {chat_id}: {e}")
 
-# --- Main Job or Task (Optimized with Session Caching) ---
 async def check_sms_job(context: ContextTypes.DEFAULT_TYPE):
     print(f"\n--- [{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}] Checking for new messages ---")
-    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
-    
-    # Try to load saved session first
+    headers = {'User-Agent': 'Mozilla/5.0'}
     saved_cookies = load_session()
     
     async with httpx.AsyncClient(timeout=60.0, follow_redirects=True, cookies=saved_cookies) as client:
         try:
             csrf_token = None
-            
-            # If we have saved session, try to get CSRF token directly from SMS page
             if saved_cookies:
-                print("🔓 Using saved session...")
                 try:
-                    # Go directly to SMS page to get CSRF token
                     sms_page = await client.get(BASE_URL + "/portal/sms/received", headers=headers)
                     if "login" not in str(sms_page.url):
-                        # Session is valid!
-                        print("✅ Session still valid!")
                         soup = BeautifulSoup(sms_page.text, 'html.parser')
                         csrf_token_meta = soup.find('meta', {'name': 'csrf-token'})
                         if csrf_token_meta:
                             csrf_token = csrf_token_meta.get('content')
                             headers['Referer'] = str(sms_page.url)
-                            print("🔑 CSRF token obtained!")
-                        else:
-                            print("⚠️ CSRF token not found on page")
-                            clear_session()
-                    else:
-                        # Redirected to login, session expired
-                        print("⚠️ Session expired")
-                        clear_session()
-                except Exception as e:
-                    print(f"⚠️ Session check failed: {e}")
+                except:
                     clear_session()
             
-            # Login only if we don't have a valid csrf_token
             if not csrf_token:
-                print("ℹ️ Logging in...")
                 login_page_res = await client.get(LOGIN_URL, headers=headers)
                 soup = BeautifulSoup(login_page_res.text, 'html.parser')
                 token_input = soup.find('input', {'name': '_token'})
                 login_data = {'email': USERNAME, 'password': PASSWORD}
-                if token_input: 
-                    login_data['_token'] = token_input['value']
-
+                if token_input: login_data['_token'] = token_input['value']
                 login_res = await client.post(LOGIN_URL, data=login_data, headers=headers)
-                
-                if "login" in str(login_res.url):
-                    print("❌ Login failed. Check username/password.")
-                    clear_session()
-                    return
-
-                print("✅ Login successful!")
-                # Save session cookies
+                if "login" in str(login_res.url): return
                 save_session(client.cookies)
-                
                 dashboard_soup = BeautifulSoup(login_res.text, 'html.parser')
                 csrf_token_meta = dashboard_soup.find('meta', {'name': 'csrf-token'})
-                if not csrf_token_meta:
-                    print("❌ CSRF token not found after login.")
-                    return
+                if not csrf_token_meta: return
                 csrf_token = csrf_token_meta.get('content')
                 headers['Referer'] = str(login_res.url)
 
-            # Fetch SMS
             messages = await fetch_sms_from_api(client, headers, csrf_token)
-            if not messages: 
-                print("✔️ No new messages found.")
-                return
+            if not messages: return
 
             processed_ids = load_processed_ids()
             chat_ids_to_send = load_chat_ids()
-            new_messages_found = 0
             
             for msg in reversed(messages):
                 if msg["id"] not in processed_ids:
-                    new_messages_found += 1
-                    print(f"✔️ New message found from: {msg['number']}.")
                     for chat_id in chat_ids_to_send:
                         await send_telegram_message(context, chat_id, msg)
                     save_processed_id(msg["id"])
-            
-            if new_messages_found > 0:
-                print(f"✅ Total {new_messages_found} new messages sent to Telegram.")
-
-        except httpx.RequestError as e:
-            print(f"❌ Network issue: {e}")
-            clear_session()
         except Exception as e:
             print(f"❌ Error: {e}")
-            traceback.print_exc()
-            clear_session()
 
-# --- Main part to start the bot ---
 def main():
-    keep_alive()   # 👈 YE LINE ADD KARO (SABSE PEHLE)
-    print("🚀 iVasms to Telegram Bot is starting...")
-
-    # Not checking for 'YOUR_SECOND_ADMIN_ID_HERE' anymore,
-    # as you have correctly provided the IDs in ADMIN_CHAT_IDS.
-    # A warning will be shown if the ADMIN_CHAT_IDS list is empty.
-    if not ADMIN_CHAT_IDS:
-        print("\n!!! 🔴 WARNING: You have not correctly set admin IDs in your ADMIN_CHAT_IDS list. !!!\n")
-        return
-
-    # Create the bot application
+    keep_alive()
     application = Application.builder().token(YOUR_BOT_TOKEN).build()
-
-    # Add command handlers
     application.add_handler(CommandHandler("start", start_command))
     application.add_handler(CommandHandler("add_chat", add_chat_command))
     application.add_handler(CommandHandler("remove_chat", remove_chat_command))
     application.add_handler(CommandHandler("list_chats", list_chats_command))
 
-    # Set the main job to run repeatedly at a specific interval
     job_queue = application.job_queue
-    job_queue.run_repeating(
-        check_sms_job,
-        interval=POLLING_INTERVAL_SECONDS,
-        first=1,
-    )
-
-    print(f"🚀 Checking for new messages every {POLLING_INTERVAL_SECONDS} seconds.")
-    print("🤖 Bot is now online. Ready to listen for commands.")
-    print("⚠️ Press Ctrl+C to stop the bot.")
-    
-    # Start the bot
+    job_queue.run_repeating(check_sms_job, interval=POLLING_INTERVAL_SECONDS, first=1)
     application.run_polling()
 
 if __name__ == "__main__":
