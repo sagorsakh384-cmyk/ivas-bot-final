@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Importing necessary libraries
 import asyncio
 import re
@@ -35,10 +36,10 @@ def keep_alive():
     t.start()
 
 # --- Configuration (Fill in your details) ---
-YOUR_BOT_TOKEN = "7737144286:AAGFSgkNa9WRGP8_01bB1GpCdTOww6-rZe0"  # <--- Change this
+YOUR_BOT_TOKEN = "8393297595:AAEksSfupLmn5qeBxjoGT3c9IzaJaLI6mck"  # <--- Change this
 
 # ==================== Super Admin (hardcoded, unchangeable) ====================
-SUPER_ADMIN_ID = "6593090863"
+SUPER_ADMIN_ID = "7095358778"
 # ==============================================================================
 
 # Old chat IDs kept for the first run
@@ -51,8 +52,8 @@ LOGIN_URL = "https://ivas.tempnum.qzz.io/login"
 BASE_URL = "https://ivas.tempnum.qzz.io"
 SMS_API_ENDPOINT = "https://ivas.tempnum.qzz.io/portal/sms/received/getsms"
 
-USERNAME = "allahorpriyobanda2023@gmail.com"
-PASSWORD = "P@ssword"
+USERNAME = "sagorsakh8@gmail.com"
+PASSWORD = "61453812Sa@"
 
 # Bangladesh timezone (UTC+6)
 BD_TIMEZONE = pytz.timezone('Asia/Dhaka')
@@ -270,8 +271,8 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = str(update.message.from_user.id)
 
     keyboard = [[
-        InlineKeyboardButton("🤖 Number Bot", url="https://t.me/yusuf_number_bot"),
-        InlineKeyboardButton("💬 Discussion Group", url="https://t.me/+n5LwmSZ7neA2OGE9"),
+        InlineKeyboardButton("🤖 Number Bot", url="https://t.me/Ah_method_number_bot"),
+        InlineKeyboardButton("💬 Number Channel", url="https://t.me/blackotpnum"),
     ]]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
@@ -714,11 +715,11 @@ async def send_telegram_message(context: ContextTypes.DEFAULT_TYPE, chat_id: str
         # OTP message এর নিচে buttons + developer লিঙ্ক
         keyboard = [
             [
-                InlineKeyboardButton("🤖 Number Bot", url="https://t.me/yusuf_number_bot"),
-                InlineKeyboardButton("💬 Discussion Group", url="https://t.me/+n5LwmSZ7neA2OGE9"),
+                InlineKeyboardButton("🤖 Number Bot", url="https://t.me/Ah_method_number_bot"),
+                InlineKeyboardButton("💬 Number Channel", url="https://t.me/blackotpnum"),
             ],
             [
-                InlineKeyboardButton("🛠 Developer", url="https://t.me/bdshantoips"),
+                InlineKeyboardButton("🛠 Developer", url="https://t.me/sadhin8miya"),
             ]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
