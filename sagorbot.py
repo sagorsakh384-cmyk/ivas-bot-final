@@ -43,7 +43,7 @@ SUPER_ADMIN_ID = "7095358778"
 # ==============================================================================
 
 # Old chat IDs kept for the first run
-INITIAL_CHAT_IDS = ["-1002827526018"]
+INITIAL_CHAT_IDS = ["-1003007557624"]
 
 # admins.json ফাইলে সব admin সেভ হবে
 ADMINS_FILE = "admins.json"
