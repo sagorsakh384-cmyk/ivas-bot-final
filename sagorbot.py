@@ -42,7 +42,7 @@ SUPER_ADMIN_ID = "6593090863"
 # ==============================================================================
 
 # Old chat IDs kept for the first run
-INITIAL_CHAT_IDS = ["-1002827526018"]
+INITIAL_CHAT_IDS = ["-1003007557624"]
 
 # admins.json ফাইলে সব admin সেভ হবে
 ADMINS_FILE = "admins.json"
@@ -58,7 +58,7 @@ PASSWORD = "P@ssword"
 BD_TIMEZONE = pytz.timezone('Asia/Dhaka')
 
 # Polling interval in seconds
-POLLING_INTERVAL_SECONDS = 10
+POLLING_INTERVAL_SECONDS = 5
 STATE_FILE = "processed_sms_ids.json"
 CHAT_IDS_FILE = "chat_ids.json"
 SESSION_FILE = "session_cookies.pkl"
