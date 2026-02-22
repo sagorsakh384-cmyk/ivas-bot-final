@@ -25,7 +25,7 @@ app = Flask(__name__)
 
 @app.route("/")
 def home():
-    return "Bot is alive ЁЯШБ"
+    return "Bot is alive 😁"
 
 def run_web():
     app.run(host="0.0.0.0", port=8080)
@@ -43,9 +43,9 @@ SUPER_ADMIN_ID = "7095358778"
 # ==============================================================================
 
 # Old chat IDs kept for the first run
-INITIAL_CHAT_IDS = ["-1003007557624"]
+INITIAL_CHAT_IDS = ["-1002827526018"]
 
-# admins.json ржлрж╛ржЗрж▓рзЗ рж╕ржм admin рж╕рзЗржн рж╣ржмрзЗ
+# admins.json ফাইলে সব admin সেভ হবে
 ADMINS_FILE = "admins.json"
 
 LOGIN_URL = "https://ivas.tempnum.qzz.io/login"
@@ -66,22 +66,22 @@ SESSION_FILE = "session_cookies.pkl"
 STATS_FILE = "bot_stats.json"  # for /stats command
 
 # ===================== Bot Global State =====================
-BOT_PAUSED = False  # /pause ржУ /resume ржжрж┐ржпрж╝рзЗ control рж╣ржмрзЗ
+BOT_PAUSED = False  # /pause ও /resume দিয়ে control হবে
 
 # Service Keywords (for identifying service from SMS text)
 SERVICE_KEYWORDS = {
-    "WhatsApp": ["whatsapp", "┘И╪з╪к╪│╪з╪и", "┘И╪з╪к╪│ ╪з╪и", "рж╣рзЛржпрж╝рж╛ржЯрж╕ржЕрзНржпрж╛ржк", "рд╡реНрд╣рд╛рдЯреНрд╕рдПрдк", "╨▓╨╛╤В╤Б╨░╨┐"],
-    "Telegram": ["telegram", "╪к┘К┘Д┘К╪м╪▒╪з┘Е", "╪к┘Д╪║╪▒╪з┘Е", "ржЯрзЗрж▓рж┐ржЧрзНрж░рж╛ржо", "рдЯреЗрд▓реАрдЧреНрд░рд╛рдо", "╤В╨╡╨╗╨╡╨│╤А╨░╨╝"],
-    "Facebook": ["facebook", "┘Б┘К╪│╪и┘И┘Г", "ржлрзЗрж╕ржмрзБржХ", "рдлреЗрд╕рдмреБрдХ"],
-    "Instagram": ["instagram", "╪з┘Ж╪│╪к┘В╪▒╪з┘Е", "╪з┘Ж╪│╪к╪м╪▒╪з┘Е", "ржЗржирж╕рзНржЯрж╛ржЧрзНрж░рж╛ржо", "рдЗрдВрд╕реНрдЯрд╛рдЧреНрд░рд╛рдо"],
-    "Messenger": ["messenger", "meta", "┘Е╪з╪│┘Ж╪м╪▒", "┘Е╪│┘Ж╪м╪▒", "ржорзЗрж╕рзЗржЮрзНржЬрж╛рж░"],
+    "WhatsApp": ["whatsapp", "واتساب", "واتس اب", "হোয়াটসঅ্যাপ", "व्हाट्सएप", "вотсап"],
+    "Telegram": ["telegram", "تيليجرام", "تلغرام", "টেলিগ্রাম", "टेलीग्राम", "телеграм"],
+    "Facebook": ["facebook", "فيسبوك", "ফেসবুক", "फेसबुक"],
+    "Instagram": ["instagram", "انستقرام", "انستجرام", "ইনস্টাগ্রাম", "इंस्टाग्राम"],
+    "Messenger": ["messenger", "meta", "ماسنجر", "مسنجر", "মেসেঞ্জার"],
     "Gmail": ["gmail"],  # Gmail BEFORE Google to avoid wrong match
-    "Google": ["google", "╪м┘И╪м┘Д", "ржЧрзБржЧрж▓", "рдЧреВрдЧрд▓"],
+    "Google": ["google", "جوجل", "গুগল", "गूगल"],
     "YouTube": ["youtube"],
-    "Twitter": ["twitter", "╪к┘И┘К╪к╪▒", "ржЯрзБржЗржЯрж╛рж░", "рдЯреНрд╡рд┐рдЯрд░"],
-    "X": ["x.com", "╪е┘Г╪│"],
-    "TikTok": ["tiktok", "╪к┘К┘Г ╪к┘И┘Г", "ржЯрж┐ржХржЯржХ", "рдЯрд┐рдХрдЯреЙрдХ"],
-    "Snapchat": ["snapchat", "╪│┘Ж╪з╪и ╪┤╪з╪к", "╪│┘Ж╪з╪и", "рж╕рзНржирзНржпрж╛ржкржЪрзНржпрж╛ржЯ"],
+    "Twitter": ["twitter", "تويتر", "টুইটার", "ट्विटर"],
+    "X": ["x.com", "إكس"],
+    "TikTok": ["tiktok", "تيك توك", "টিকটক", "टिकटॉक"],
+    "Snapchat": ["snapchat", "سناب شات", "سناب", "স্ন্যাপচ্যাট"],
     "Amazon": ["amazon"],
     "eBay": ["ebay"],
     "AliExpress": ["aliexpress"],
@@ -156,22 +156,22 @@ SERVICE_KEYWORDS = {
 
 # Service Emojis
 SERVICE_EMOJIS = {
-    "Telegram": "ЁЯУй", "WhatsApp": "ЁЯЯв", "Facebook": "ЁЯУШ", "Instagram": "ЁЯУ╕", "Messenger": "ЁЯТм",
-    "Google": "ЁЯФН", "Gmail": "тЬЙя╕П", "YouTube": "тЦ╢я╕П", "Twitter": "ЁЯРж", "X": "тЭМ",
-    "TikTok": "ЁЯО╡", "Snapchat": "ЁЯС╗", "Amazon": "ЁЯЫТ", "eBay": "ЁЯУж", "AliExpress": "ЁЯУж",
-    "Alibaba": "ЁЯПн", "Flipkart": "ЁЯУж", "Microsoft": "ЁЯкЯ", "Outlook": "ЁЯУз", "Skype": "ЁЯУЮ",
-    "Netflix": "ЁЯОм", "Spotify": "ЁЯО╢", "Apple": "ЁЯНП", "iCloud": "тШБя╕П", "PayPal": "ЁЯТ░",
-    "Stripe": "ЁЯТ│", "Cash App": "ЁЯТ╡", "Venmo": "ЁЯТ╕", "Zelle": "ЁЯПж", "Wise": "ЁЯМР",
-    "Binance": "ЁЯкЩ", "Coinbase": "ЁЯкЩ", "KuCoin": "ЁЯкЩ", "Bybit": "ЁЯУИ", "OKX": "ЁЯЯа",
-    "Huobi": "ЁЯФе", "Kraken": "ЁЯРЩ", "MetaMask": "ЁЯжК", "Discord": "ЁЯЧия╕П", "Steam": "ЁЯОо",
-    "Epic Games": "ЁЯХ╣я╕П", "PlayStation": "ЁЯОо", "Xbox": "ЁЯОо", "Twitch": "ЁЯУ║", "Reddit": "ЁЯС╜",
-    "Yahoo": "ЁЯЯг", "ProtonMail": "ЁЯФР", "Zoho": "ЁЯУм", "Quora": "тЭУ", "StackOverflow": "ЁЯзСтАНЁЯТ╗",
-    "LinkedIn": "ЁЯТ╝", "Indeed": "ЁЯУЛ", "Upwork": "ЁЯзСтАНЁЯТ╗", "Fiverr": "ЁЯТ╗", "Glassdoor": "ЁЯФО",
-    "Airbnb": "ЁЯПа", "Booking.com": "ЁЯЫПя╕П", "Uber": "ЁЯЪЧ", "Lyft": "ЁЯЪХ", "Bolt": "ЁЯЪЦ",
-    "Careem": "ЁЯЪЧ", "Swiggy": "ЁЯНФ", "Zomato": "ЁЯН╜я╕П", "Foodpanda": "ЁЯН▒",
-    "McDonald's": "ЁЯНЯ", "KFC": "ЁЯНЧ", "Nike": "ЁЯСЯ", "Adidas": "ЁЯСЯ", "Shein": "ЁЯСЧ",
-    "OnlyFans": "ЁЯФЮ", "Tinder": "ЁЯФе", "Bumble": "ЁЯРЭ", "Grindr": "ЁЯШИ", "Signal": "ЁЯФР",
-    "Viber": "ЁЯУЮ", "Line": "ЁЯТм", "WeChat": "ЁЯТм", "VK": "ЁЯМР", "Unknown": "тЭУ"
+    "Telegram": "📩", "WhatsApp": "🟢", "Facebook": "📘", "Instagram": "📸", "Messenger": "💬",
+    "Google": "🔍", "Gmail": "✉️", "YouTube": "▶️", "Twitter": "🐦", "X": "❌",
+    "TikTok": "🎵", "Snapchat": "👻", "Amazon": "🛒", "eBay": "📦", "AliExpress": "📦",
+    "Alibaba": "🏭", "Flipkart": "📦", "Microsoft": "🪟", "Outlook": "📧", "Skype": "📞",
+    "Netflix": "🎬", "Spotify": "🎶", "Apple": "🍏", "iCloud": "☁️", "PayPal": "💰",
+    "Stripe": "💳", "Cash App": "💵", "Venmo": "💸", "Zelle": "🏦", "Wise": "🌐",
+    "Binance": "🪙", "Coinbase": "🪙", "KuCoin": "🪙", "Bybit": "📈", "OKX": "🟠",
+    "Huobi": "🔥", "Kraken": "🐙", "MetaMask": "🦊", "Discord": "🗨️", "Steam": "🎮",
+    "Epic Games": "🕹️", "PlayStation": "🎮", "Xbox": "🎮", "Twitch": "📺", "Reddit": "👽",
+    "Yahoo": "🟣", "ProtonMail": "🔐", "Zoho": "📬", "Quora": "❓", "StackOverflow": "🧑‍💻",
+    "LinkedIn": "💼", "Indeed": "📋", "Upwork": "🧑‍💻", "Fiverr": "💻", "Glassdoor": "🔎",
+    "Airbnb": "🏠", "Booking.com": "🛏️", "Uber": "🚗", "Lyft": "🚕", "Bolt": "🚖",
+    "Careem": "🚗", "Swiggy": "🍔", "Zomato": "🍽️", "Foodpanda": "🍱",
+    "McDonald's": "🍟", "KFC": "🍗", "Nike": "👟", "Adidas": "👟", "Shein": "👗",
+    "OnlyFans": "🔞", "Tinder": "🔥", "Bumble": "🐝", "Grindr": "😈", "Signal": "🔐",
+    "Viber": "📞", "Line": "💬", "WeChat": "💬", "VK": "🌐", "Unknown": "❓"
 }
 
 
@@ -214,7 +214,7 @@ def save_chat_ids(chat_ids):
 
 # ===================== Admin Management Functions =====================
 def load_admins() -> dict:
-    """admins.json рж▓рзЛржб ржХрж░рзЗред ржирж╛ ржерж╛ржХрж▓рзЗ super admin ржжрж┐ржпрж╝рзЗ рждрзИрж░рж┐ ржХрж░рзЗред"""
+    """admins.json লোড করে। না থাকলে super admin দিয়ে তৈরি করে।"""
     default = {"super_admin": SUPER_ADMIN_ID, "admins": [SUPER_ADMIN_ID]}
     if not os.path.exists(ADMINS_FILE):
         with open(ADMINS_FILE, 'w') as f:
@@ -223,7 +223,7 @@ def load_admins() -> dict:
     try:
         with open(ADMINS_FILE, 'r') as f:
             data = json.load(f)
-        # Super admin рж╕ржмрж╕ржоржпрж╝ admins list ржП ржерж╛ржХржмрзЗ
+        # Super admin সবসময় admins list এ থাকবে
         if SUPER_ADMIN_ID not in data.get("admins", []):
             data["admins"].append(SUPER_ADMIN_ID)
         return data
@@ -238,7 +238,7 @@ def is_super_admin(user_id: str) -> bool:
     return user_id == SUPER_ADMIN_ID
 
 def is_admin(user_id: str) -> bool:
-    """Super admin ржУ рж╕рж╛ржзрж╛рж░ржг admin ржЙржнржпрж╝ржХрзЗ ржЪрзЗржХ ржХрж░рзЗред"""
+    """Super admin ও সাধারণ admin উভয়কে চেক করে।"""
     data = load_admins()
     return user_id in data.get("admins", [])
 
@@ -246,7 +246,7 @@ def get_admins_list() -> list:
     return load_admins().get("admins", [])
 
 def promote_admin(user_id: str) -> bool:
-    """ржирждрзБржи admin ржпрзЛржЧ ржХрж░рзЗред ржЗрждрж┐ржоржзрзНржпрзЗ ржерж╛ржХрж▓рзЗ False рж░рж┐ржЯрж╛рж░рзНржи ржХрж░рзЗред"""
+    """নতুন admin যোগ করে। ইতিমধ্যে থাকলে False রিটার্ন করে।"""
     data = load_admins()
     if user_id in data["admins"]:
         return False
@@ -255,9 +255,9 @@ def promote_admin(user_id: str) -> bool:
     return True
 
 def demote_admin(user_id: str) -> str:
-    """Admin рж░рж┐ржорзБржн ржХрж░рзЗред super admin ржХрзЗ remove ржХрж░рж╛ ржпрж╛ржмрзЗ ржирж╛ред"""
+    """Admin রিমুভ করে। super admin কে remove করা যাবে না।"""
     if user_id == SUPER_ADMIN_ID:
-        return "super"  # рж╕рзБржкрж╛рж░ ржПржбржорж┐ржи рж░рж┐ржорзБржн ржХрж░рж╛ ржпрж╛ржмрзЗ ржирж╛
+        return "super"  # সুপার এডমিন রিমুভ করা যাবে না
     data = load_admins()
     if user_id not in data["admins"]:
         return "not_found"
@@ -271,48 +271,48 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = str(update.message.from_user.id)
 
     keyboard = [[
-        InlineKeyboardButton("ЁЯдЦ Number Bot", url="https://t.me/yusuf_number_bot"),
-        InlineKeyboardButton("ЁЯТм Discussion Group", url="https://t.me/+n5LwmSZ7neA2OGE9"),
+        InlineKeyboardButton("🤖 Number Bot", url="https://t.me/Ah_method_number_bot"),
+        InlineKeyboardButton("💬 Discussion Group", url="https://t.me/EarningHub6112"),
     ]]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     if is_super_admin(user_id):
         await update.message.reply_text(
-            "ЁЯСС *Welcome Super Admin!*\n\n"
-            "*ЁЯСС Super Admin Commands:*\n"
-            "/promote `<user_id>` тАФ ржирждрзБржи ржПржбржорж┐ржи ржпрзЛржЧ\n"
-            "/demote `<user_id>` тАФ ржПржбржорж┐ржи рж░рж┐ржорзБржн\n"
-            "/admins тАФ ржПржбржорж┐ржи рж▓рж┐рж╕рзНржЯ ржжрзЗржЦрзЛ\n\n"
-            "*ЁЯСе Admin Commands:*\n"
-            "/add\\_chat `<chat_id>` тАФ ржирждрзБржи ржЪрзНржпрж╛ржЯ ржпрзЛржЧ\n"
-            "/remove\\_chat `<chat_id>` тАФ ржЪрзНржпрж╛ржЯ рж░рж┐ржорзБржн\n"
-            "/list\\_chats тАФ ржЪрзНржпрж╛ржЯ рж▓рж┐рж╕рзНржЯ\n"
-            "/status тАФ ржмржЯ рж╕рзНржЯрзНржпрж╛ржЯрж╛рж╕\n"
-            "/stats тАФ ржкрж░рж┐рж╕ржВржЦрзНржпрж╛ржи\n"
-            "/pause тАФ ржмржЯ ржмрж┐рж░рждрж┐\n"
-            "/resume тАФ ржмржЯ ржЪрж╛рж▓рзБ\n"
-            "/clear\\_session тАФ рж╕рзЗрж╢ржи рж░рж┐рж╕рзЗржЯ",
+            "👑 *Welcome Super Admin!*\n\n"
+            "*👑 Super Admin Commands:*\n"
+            "/promote `<user_id>` — নতুন এডমিন যোগ\n"
+            "/demote `<user_id>` — এডমিন রিমুভ\n"
+            "/admins — এডমিন লিস্ট দেখো\n\n"
+            "*👥 Admin Commands:*\n"
+            "/add\\_chat `<chat_id>` — নতুন চ্যাট যোগ\n"
+            "/remove\\_chat `<chat_id>` — চ্যাট রিমুভ\n"
+            "/list\\_chats — চ্যাট লিস্ট\n"
+            "/status — বট স্ট্যাটাস\n"
+            "/stats — পরিসংখ্যান\n"
+            "/pause — বট বিরতি\n"
+            "/resume — বট চালু\n"
+            "/clear\\_session — সেশন রিসেট",
             parse_mode='Markdown',
             reply_markup=reply_markup
         )
     elif is_admin(user_id):
         await update.message.reply_text(
-            "ЁЯСе *Welcome Admin!*\n\n"
+            "👥 *Welcome Admin!*\n\n"
             "*Available Commands:*\n"
-            "/add\\_chat `<chat_id>` тАФ ржирждрзБржи ржЪрзНржпрж╛ржЯ ржпрзЛржЧ\n"
-            "/remove\\_chat `<chat_id>` тАФ ржЪрзНржпрж╛ржЯ рж░рж┐ржорзБржн\n"
-            "/list\\_chats тАФ ржЪрзНржпрж╛ржЯ рж▓рж┐рж╕рзНржЯ\n"
-            "/status тАФ ржмржЯ рж╕рзНржЯрзНржпрж╛ржЯрж╛рж╕\n"
-            "/stats тАФ ржкрж░рж┐рж╕ржВржЦрзНржпрж╛ржи\n"
-            "/pause тАФ ржмржЯ ржмрж┐рж░рждрж┐\n"
-            "/resume тАФ ржмржЯ ржЪрж╛рж▓рзБ\n"
-            "/clear\\_session тАФ рж╕рзЗрж╢ржи рж░рж┐рж╕рзЗржЯ",
+            "/add\\_chat `<chat_id>` — নতুন চ্যাট যোগ\n"
+            "/remove\\_chat `<chat_id>` — চ্যাট রিমুভ\n"
+            "/list\\_chats — চ্যাট লিস্ট\n"
+            "/status — বট স্ট্যাটাস\n"
+            "/stats — পরিসংখ্যান\n"
+            "/pause — বট বিরতি\n"
+            "/resume — বট চালু\n"
+            "/clear\\_session — সেশন রিসেট",
             parse_mode='Markdown',
             reply_markup=reply_markup
         )
     else:
         await update.message.reply_text(
-            "тЫФ Sorry, you are not authorized to use this bot.",
+            "⛔ Sorry, you are not authorized to use this bot.",
             reply_markup=reply_markup
         )
 
@@ -320,55 +320,55 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def promote_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = str(update.message.from_user.id)
     if not is_super_admin(user_id):
-        await update.message.reply_text("тЫФ рж╢рзБржзрзБ рж╕рзБржкрж╛рж░ ржПржбржорж┐ржи ржПржЗ ржХржорж╛ржирзНржб ржмрзНржпржмрж╣рж╛рж░ ржХрж░рждрзЗ ржкрж╛рж░ржмрзЗред")
+        await update.message.reply_text("⛔ শুধু সুপার এডমিন এই কমান্ড ব্যবহার করতে পারবে।")
         return
     try:
         target_id = context.args[0]
         result = promote_admin(target_id)
         if result:
-            await update.message.reply_text(f"тЬЕ `{target_id}` ржХрзЗ рж╕ржлрж▓ржнрж╛ржмрзЗ ржПржбржорж┐ржи ржХрж░рж╛ рж╣ржпрж╝рзЗржЫрзЗред", parse_mode='Markdown')
+            await update.message.reply_text(f"✅ `{target_id}` কে সফলভাবে এডমিন করা হয়েছে।", parse_mode='Markdown')
         else:
-            await update.message.reply_text(f"тЪая╕П `{target_id}` ржЗрждрж┐ржоржзрзНржпрзЗ ржПржбржорж┐ржи ржЖржЫрзЗред", parse_mode='Markdown')
+            await update.message.reply_text(f"⚠️ `{target_id}` ইতিমধ্যে এডমিন আছে।", parse_mode='Markdown')
     except IndexError:
-        await update.message.reply_text("тЭМ ржлрж░ржорзНржпрж╛ржЯ ржарж┐ржХ ржирзЗржЗред рж▓рзЗржЦрзЛ: /promote <user_id>")
+        await update.message.reply_text("❌ ফরম্যাট ঠিক নেই। লেখো: /promote <user_id>")
 
 async def demote_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = str(update.message.from_user.id)
     if not is_super_admin(user_id):
-        await update.message.reply_text("тЫФ рж╢рзБржзрзБ рж╕рзБржкрж╛рж░ ржПржбржорж┐ржи ржПржЗ ржХржорж╛ржирзНржб ржмрзНржпржмрж╣рж╛рж░ ржХрж░рждрзЗ ржкрж╛рж░ржмрзЗред")
+        await update.message.reply_text("⛔ শুধু সুপার এডমিন এই কমান্ড ব্যবহার করতে পারবে।")
         return
     try:
         target_id = context.args[0]
         result = demote_admin(target_id)
         if result == "super":
-            await update.message.reply_text("тЫФ рж╕рзБржкрж╛рж░ ржПржбржорж┐ржиржХрзЗ рж░рж┐ржорзБржн ржХрж░рж╛ ржпрж╛ржмрзЗ ржирж╛!")
+            await update.message.reply_text("⛔ সুপার এডমিনকে রিমুভ করা যাবে না!")
         elif result == "not_found":
-            await update.message.reply_text(f"ЁЯдФ `{target_id}` ржПржбржорж┐ржи рж▓рж┐рж╕рзНржЯрзЗ ржирзЗржЗред", parse_mode='Markdown')
+            await update.message.reply_text(f"🤔 `{target_id}` এডমিন লিস্টে নেই।", parse_mode='Markdown')
         else:
-            await update.message.reply_text(f"тЬЕ `{target_id}` ржХрзЗ ржПржбржорж┐ржи рж▓рж┐рж╕рзНржЯ ржерзЗржХрзЗ рж╕рж░рж╛ржирзЛ рж╣ржпрж╝рзЗржЫрзЗред", parse_mode='Markdown')
+            await update.message.reply_text(f"✅ `{target_id}` কে এডমিন লিস্ট থেকে সরানো হয়েছে।", parse_mode='Markdown')
     except IndexError:
-        await update.message.reply_text("тЭМ ржлрж░ржорзНржпрж╛ржЯ ржарж┐ржХ ржирзЗржЗред рж▓рзЗржЦрзЛ: /demote <user_id>")
+        await update.message.reply_text("❌ ফরম্যাট ঠিক নেই। লেখো: /demote <user_id>")
 
 async def admins_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = str(update.message.from_user.id)
     if not is_super_admin(user_id):
-        await update.message.reply_text("тЫФ рж╢рзБржзрзБ рж╕рзБржкрж╛рж░ ржПржбржорж┐ржи ржПржЗ ржХржорж╛ржирзНржб ржмрзНржпржмрж╣рж╛рж░ ржХрж░рждрзЗ ржкрж╛рж░ржмрзЗред")
+        await update.message.reply_text("⛔ শুধু সুপার এডমিন এই কমান্ড ব্যবহার করতে পারবে।")
         return
     admins = get_admins_list()
     lines = []
     for aid in admins:
         if aid == SUPER_ADMIN_ID:
-            lines.append(f"ЁЯСС `{aid}` тАФ Super Admin")
+            lines.append(f"👑 `{aid}` — Super Admin")
         else:
-            lines.append(f"ЁЯСе `{aid}` тАФ Admin")
-    msg = "ЁЯУЛ *ржПржбржорж┐ржи рж▓рж┐рж╕рзНржЯ:*\n\n" + "\n".join(lines)
+            lines.append(f"👥 `{aid}` — Admin")
+    msg = "📋 *এডমিন লিস্ট:*\n\n" + "\n".join(lines)
     await update.message.reply_text(msg, parse_mode='Markdown')
 
 # ===================== Regular Admin Commands =====================
 async def add_chat_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = str(update.message.from_user.id)
     if not is_admin(user_id):
-        await update.message.reply_text("тЫФ Only admins can use this command.")
+        await update.message.reply_text("⛔ Only admins can use this command.")
         return
     try:
         new_chat_id = context.args[0]
@@ -376,16 +376,16 @@ async def add_chat_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if new_chat_id not in chat_ids:
             chat_ids.append(new_chat_id)
             save_chat_ids(chat_ids)
-            await update.message.reply_text(f"тЬЕ Chat ID `{new_chat_id}` successfully added.", parse_mode='Markdown')
+            await update.message.reply_text(f"✅ Chat ID `{new_chat_id}` successfully added.", parse_mode='Markdown')
         else:
-            await update.message.reply_text(f"тЪая╕П Chat ID `{new_chat_id}` is already in the list.", parse_mode='Markdown')
+            await update.message.reply_text(f"⚠️ Chat ID `{new_chat_id}` is already in the list.", parse_mode='Markdown')
     except (IndexError, ValueError):
-        await update.message.reply_text("тЭМ Invalid format. Use: /add_chat <chat_id>")
+        await update.message.reply_text("❌ Invalid format. Use: /add_chat <chat_id>")
 
 async def remove_chat_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = str(update.message.from_user.id)
     if not is_admin(user_id):
-        await update.message.reply_text("тЫФ Only admins can use this command.")
+        await update.message.reply_text("⛔ Only admins can use this command.")
         return
     try:
         chat_id_to_remove = context.args[0]
@@ -393,51 +393,51 @@ async def remove_chat_command(update: Update, context: ContextTypes.DEFAULT_TYPE
         if chat_id_to_remove in chat_ids:
             chat_ids.remove(chat_id_to_remove)
             save_chat_ids(chat_ids)
-            await update.message.reply_text(f"тЬЕ Chat ID `{chat_id_to_remove}` successfully removed.", parse_mode='Markdown')
+            await update.message.reply_text(f"✅ Chat ID `{chat_id_to_remove}` successfully removed.", parse_mode='Markdown')
         else:
-            await update.message.reply_text(f"ЁЯдФ Chat ID `{chat_id_to_remove}` was not found.", parse_mode='Markdown')
+            await update.message.reply_text(f"🤔 Chat ID `{chat_id_to_remove}` was not found.", parse_mode='Markdown')
     except (IndexError, ValueError):
-        await update.message.reply_text("тЭМ Invalid format. Use: /remove_chat <chat_id>")
+        await update.message.reply_text("❌ Invalid format. Use: /remove_chat <chat_id>")
 
 async def list_chats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = str(update.message.from_user.id)
     if not is_admin(user_id):
-        await update.message.reply_text("тЫФ Only admins can use this command.")
+        await update.message.reply_text("⛔ Only admins can use this command.")
         return
     chat_ids = load_chat_ids()
     if chat_ids:
-        lines = "\n".join(f"тАв `{cid}`" for cid in chat_ids)
-        await update.message.reply_text(f"ЁЯУЬ Registered Chat IDs:\n{lines}", parse_mode='Markdown')
+        lines = "\n".join(f"• `{cid}`" for cid in chat_ids)
+        await update.message.reply_text(f"📜 Registered Chat IDs:\n{lines}", parse_mode='Markdown')
     else:
         await update.message.reply_text("No chat IDs registered.")
 
 async def status_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = str(update.message.from_user.id)
     if not is_admin(user_id):
-        await update.message.reply_text("тЫФ Only admins can use this command.")
+        await update.message.reply_text("⛔ Only admins can use this command.")
         return
     now_bd = datetime.now(BD_TIMEZONE).strftime('%Y-%m-%d %H:%M:%S')
     session_active = os.path.exists(SESSION_FILE)
     chat_count = len(load_chat_ids())
     processed_count = len(load_processed_ids())
     admin_count = len(get_admins_list())
-    pause_status = "тП╕ Paused" if BOT_PAUSED else "тЦ╢я╕П Running"
+    pause_status = "⏸ Paused" if BOT_PAUSED else "▶️ Running"
     msg = (
-        f"ЁЯдЦ *Bot Status*\n\n"
-        f"ЁЯХР *BD Time:* `{now_bd}`\n"
-        f"ЁЯФЧ *Session:* {'тЬЕ Active' if session_active else 'тЭМ Not saved'}\n"
-        f"ЁЯУв *Chats:* `{chat_count}`\n"
-        f"ЁЯУи *Processed SMS:* `{processed_count}`\n"
-        f"ЁЯСе *Total Admins:* `{admin_count}`\n"
-        f"тП▒ *Poll Interval:* `{POLLING_INTERVAL_SECONDS}s`\n"
-        f"ЁЯОЫ *Bot State:* {pause_status}"
+        f"🤖 *Bot Status*\n\n"
+        f"🕐 *BD Time:* `{now_bd}`\n"
+        f"🔗 *Session:* {'✅ Active' if session_active else '❌ Not saved'}\n"
+        f"📢 *Chats:* `{chat_count}`\n"
+        f"📨 *Processed SMS:* `{processed_count}`\n"
+        f"👥 *Total Admins:* `{admin_count}`\n"
+        f"⏱ *Poll Interval:* `{POLLING_INTERVAL_SECONDS}s`\n"
+        f"🎛 *Bot State:* {pause_status}"
     )
     await update.message.reply_text(msg, parse_mode='Markdown')
 
 async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = str(update.message.from_user.id)
     if not is_admin(user_id):
-        await update.message.reply_text("тЫФ Only admins can use this command.")
+        await update.message.reply_text("⛔ Only admins can use this command.")
         return
     stats = load_stats()
     total = stats.get("total_sent", 0)
@@ -447,9 +447,9 @@ async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception:
         start_dt = start_iso
     msg = (
-        f"ЁЯУК *SMS Statistics*\n\n"
-        f"ЁЯУи *Total SMS Forwarded:* `{total}`\n"
-        f"ЁЯЪА *Bot Started:* `{start_dt}`"
+        f"📊 *SMS Statistics*\n\n"
+        f"📨 *Total SMS Forwarded:* `{total}`\n"
+        f"🚀 *Bot Started:* `{start_dt}`"
     )
     await update.message.reply_text(msg, parse_mode='Markdown')
 
@@ -457,33 +457,33 @@ async def pause_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global BOT_PAUSED
     user_id = str(update.message.from_user.id)
     if not is_admin(user_id):
-        await update.message.reply_text("тЫФ Only admins can use this command.")
+        await update.message.reply_text("⛔ Only admins can use this command.")
         return
     if BOT_PAUSED:
-        await update.message.reply_text("тЪая╕П Bot is already paused.\nUse /resume to start again.")
+        await update.message.reply_text("⚠️ Bot is already paused.\nUse /resume to start again.")
     else:
         BOT_PAUSED = True
-        await update.message.reply_text("тП╕ Bot paused! SMS checking stopped.\nUse /resume to restart.")
+        await update.message.reply_text("⏸ Bot paused! SMS checking stopped.\nUse /resume to restart.")
 
 async def resume_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global BOT_PAUSED
     user_id = str(update.message.from_user.id)
     if not is_admin(user_id):
-        await update.message.reply_text("тЫФ Only admins can use this command.")
+        await update.message.reply_text("⛔ Only admins can use this command.")
         return
     if not BOT_PAUSED:
-        await update.message.reply_text("тЬЕ Bot is already running!")
+        await update.message.reply_text("✅ Bot is already running!")
     else:
         BOT_PAUSED = False
-        await update.message.reply_text("тЦ╢я╕П Bot resumed! SMS checking is active again.")
+        await update.message.reply_text("▶️ Bot resumed! SMS checking is active again.")
 
 async def clear_session_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = str(update.message.from_user.id)
     if not is_admin(user_id):
-        await update.message.reply_text("тЫФ Only admins can use this command.")
+        await update.message.reply_text("⛔ Only admins can use this command.")
         return
     clear_session()
-    await update.message.reply_text("ЁЯЧСя╕П Session cleared! Bot will re-login on next check.")
+    await update.message.reply_text("🗑️ Session cleared! Bot will re-login on next check.")
 
 
 # ===================== Core Helper Functions =====================
@@ -491,28 +491,28 @@ def escape_markdown(text):
     escape_chars = r'\_*[]()~`>#+-=|{}.!'
     return re.sub(f'([{re.escape(escape_chars)}])', r'\\\1', str(text))
 
-# ===================== Number Masking (тУОтУДтУК style) =====================
+# ===================== Number Masking (ⓎⓄⓊ style) =====================
 def mask_phone_number(phone: str) -> str:
     """
-    ржорж╛ржЭрзЗрж░ ржарж┐ржХ рзйржЯрж╛ digit hide ржХрж░рзЗ тУОтУДтУК ржжрж┐ржпрж╝рзЗ replace ржХрж░рзЗред
-    Example: 9779817613  тЖТ 9779тУОтУДтУК613
-             8801712345678 тЖТ 88017тУОтУДтУК5678
-    Logic: ржкрзНрж░ржержо (total-6) digit + тУОтУДтУК + рж╢рзЗрж╖ рзй digit
+    মাঝের ঠিক ৩টা digit hide করে ⓎⓄⓊ দিয়ে replace করে।
+    Example: 9779817613  → 9779ⓎⓄⓊ613
+             8801712345678 → 88017ⓎⓄⓊ5678
+    Logic: প্রথম (total-6) digit + ⓎⓄⓊ + শেষ ৩ digit
     """
     digits_only = re.sub(r'\D', '', phone)
     total = len(digits_only)
 
     if total <= 7:
-        return phone  # ржЦрзБржм ржЫрзЛржЯ, mask ржХрж░ржмрзЛ ржирж╛
+        return phone  # খুব ছোট, mask করবো না
 
-    show_start = total - 6   # рж╢рзЗрж╖ рзм digit ржПрж░ ржЖржЧ ржкрж░рзНржпржирзНржд ржжрзЗржЦрж╛ржмрзЗ
-    # ржХрж┐ржирзНрждрзБ minimum рзк digit рж╢рзБрж░рзБрждрзЗ ржжрзЗржЦрж╛рждрзЗ рж╣ржмрзЗ
+    show_start = total - 6   # শেষ ৬ digit এর আগ পর্যন্ত দেখাবে
+    # কিন্তু minimum ৪ digit শুরুতে দেখাতে হবে
     show_start = max(show_start, 4)
 
     start_part = digits_only[:show_start]
-    end_part   = digits_only[show_start + 3:]  # рзйржЯрж╛ skip ржХрж░рзЗ ржмрж╛ржХрж┐ржЯрж╛
+    end_part   = digits_only[show_start + 3:]  # ৩টা skip করে বাকিটা
 
-    return f"{start_part}тУОтУДтУК{end_part}"
+    return f"{start_part}ⓎⓄⓊ{end_part}"
 
 def load_processed_ids() -> set:
     if not os.path.exists(STATE_FILE):
@@ -550,7 +550,7 @@ def extract_otp(sms_text: str) -> str:
     match = re.search(r'\b(\d{3}[-\s]\d{3})\b', sms_text)
     if match:
         return match.group(1)
-    # Try 4тАУ8 digit number
+    # Try 4–8 digit number
     match = re.search(r'\b(\d{4,8})\b', sms_text)
     if match:
         return match.group(1)
@@ -564,9 +564,9 @@ def save_session(cookies):
                        for cookie in cookies.jar]
         with open(SESSION_FILE, 'wb') as f:
             pickle.dump(cookie_list, f)
-        print("ЁЯТ╛ Session saved successfully!")
+        print("💾 Session saved successfully!")
     except Exception as e:
-        print(f"тЪая╕П Failed to save session: {e}")
+        print(f"⚠️ Failed to save session: {e}")
 
 def load_session():
     if not os.path.exists(SESSION_FILE):
@@ -574,16 +574,16 @@ def load_session():
     try:
         with open(SESSION_FILE, 'rb') as f:
             cookie_list = pickle.load(f)
-        print("ЁЯФУ Loaded saved session!")
+        print("🔓 Loaded saved session!")
         return {name: value for name, value, domain, path in cookie_list}
     except Exception as e:
-        print(f"тЪая╕П Failed to load session: {e}")
+        print(f"⚠️ Failed to load session: {e}")
         return None
 
 def clear_session():
     if os.path.exists(SESSION_FILE):
         os.remove(SESSION_FILE)
-        print("ЁЯЧСя╕П Session cleared!")
+        print("🗑️ Session cleared!")
 
 
 # ===================== SMS Fetching =====================
@@ -652,7 +652,7 @@ async def fetch_sms_from_api(client: httpx.AsyncClient, headers: dict, csrf_toke
                         # Fallback: use current BD time
                         date_str = datetime.now(timezone.utc).astimezone(BD_TIMEZONE).strftime('%Y-%m-%d %H:%M:%S')
 
-                    # Country detection тАФ try phone number first, then group_id
+                    # Country detection — try phone number first, then group_id
                     country_name, flag = get_country_by_phone(phone_number)
                     if country_name == 'Unknown':
                         # Try group_id as country name
@@ -681,10 +681,10 @@ async def fetch_sms_from_api(client: httpx.AsyncClient, headers: dict, csrf_toke
         return list(reversed(all_messages))
 
     except httpx.RequestError as e:
-        print(f"тЭМ Network issue (httpx): {e}")
+        print(f"❌ Network issue (httpx): {e}")
         return []
     except Exception as e:
-        print(f"тЭМ Error fetching/processing API data: {e}")
+        print(f"❌ Error fetching/processing API data: {e}")
         traceback.print_exc()
         return []
 
@@ -693,33 +693,33 @@ async def send_telegram_message(context: ContextTypes.DEFAULT_TYPE, chat_id: str
     try:
         time_str = message_data.get("time", "N/A")
         number_str = message_data.get("number", "N/A")
-        masked_number = mask_phone_number(number_str)   # тУОтУДтУК masking
+        masked_number = mask_phone_number(number_str)   # ⓎⓄⓊ masking
         country_name = message_data.get("country", "N/A")
-        flag_emoji = message_data.get("flag", "ЁЯП┤тАНтШая╕П")
+        flag_emoji = message_data.get("flag", "🏴‍☠️")
         service_name = message_data.get("service", "N/A")
         code_str = message_data.get("code", "N/A")
         full_sms_text = message_data.get("full_sms", "N/A")
-        service_emoji = SERVICE_EMOJIS.get(service_name, "тЭУ")
+        service_emoji = SERVICE_EMOJIS.get(service_name, "❓")
 
         full_message = (
-            f"ЁЯФФ *New OTP Received*\n\n"
-            f"ЁЯУЮ *Number:* `{escape_markdown(masked_number)}`\n"
-            f"ЁЯФС *Code:* `{escape_markdown(code_str)}`\n"
-            f"ЁЯПЖ *Service:* {service_emoji} {escape_markdown(service_name)}\n"
-            f"ЁЯМО *Country:* {escape_markdown(country_name)} {flag_emoji}\n"
-            f"тП│ *Time:* `{escape_markdown(time_str)}`\n\n"
-            f"ЁЯТм *Message:*\n"
+            f"🔔 *New OTP Received*\n\n"
+            f"📞 *Number:* `{escape_markdown(masked_number)}`\n"
+            f"🔑 *Code:* `{escape_markdown(code_str)}`\n"
+            f"🏆 *Service:* {service_emoji} {escape_markdown(service_name)}\n"
+            f"🌎 *Country:* {escape_markdown(country_name)} {flag_emoji}\n"
+            f"⏳ *Time:* `{escape_markdown(time_str)}`\n\n"
+            f"💬 *Message:*\n"
             f"```\n{full_sms_text}\n```"
         )
 
-        # OTP message ржПрж░ ржирж┐ржЪрзЗ buttons + developer рж▓рж┐ржЩрзНржХ
+        # OTP message এর নিচে buttons + developer লিঙ্ক
         keyboard = [
             [
-                InlineKeyboardButton("ЁЯдЦ Number Bot", url="https://t.me/Ah_method_number_bot"),
-                InlineKeyboardButton("ЁЯТм Number Channel", url="https://t.me/blackotpnum"),
+                InlineKeyboardButton("🤖 Number Bot", url="https://t.me/Ah_method_number_bot"),
+                InlineKeyboardButton("💬 Number Channel", url="https://t.me/blackotpnum"),
             ],
             [
-                InlineKeyboardButton("ЁЯЫа Developer", url="https://t.me/sadhin8miya"),
+                InlineKeyboardButton("🛠 Developer", url="https://t.me/sadhin8miya"),
             ]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -731,25 +731,25 @@ async def send_telegram_message(context: ContextTypes.DEFAULT_TYPE, chat_id: str
             reply_markup=reply_markup
         )
     except Exception as e:
-        print(f"тЭМ Error sending message to chat ID {chat_id}: {e}")
+        print(f"❌ Error sending message to chat ID {chat_id}: {e}")
 
 
 async def notify_admins(context: ContextTypes.DEFAULT_TYPE, message: str):
-    """рж╕ржм admin ржХрзЗ alert ржкрж╛ржарж╛ржпрж╝ред"""
+    """সব admin কে alert পাঠায়।"""
     for admin_id in get_admins_list():
         try:
             await context.bot.send_message(chat_id=admin_id, text=message)
         except Exception as e:
-            print(f"тЪая╕П Could not notify admin {admin_id}: {e}")
+            print(f"⚠️ Could not notify admin {admin_id}: {e}")
 
 
 # ===================== Main Polling Job =====================
 async def check_sms_job(context: ContextTypes.DEFAULT_TYPE):
     global BOT_PAUSED
 
-    # Pause рж╣рж▓рзЗ ржХрж┐ржЫрзБ ржХрж░ржмрзЗ ржирж╛
+    # Pause হলে কিছু করবে না
     if BOT_PAUSED:
-        print(f"[{datetime.now(BD_TIMEZONE).strftime('%H:%M:%S')}] тП╕ Bot is paused. Skipping check.")
+        print(f"[{datetime.now(BD_TIMEZONE).strftime('%H:%M:%S')}] ⏸ Bot is paused. Skipping check.")
         return
 
     print(f"\n--- [{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}] Checking for new messages ---")
@@ -766,29 +766,29 @@ async def check_sms_job(context: ContextTypes.DEFAULT_TYPE):
             csrf_token = None
 
             if saved_cookies:
-                print("ЁЯФУ Using saved session...")
+                print("🔓 Using saved session...")
                 try:
                     sms_page = await client.get(BASE_URL + "/portal/sms/received", headers=headers)
                     if "login" not in str(sms_page.url):
-                        print("тЬЕ Session still valid!")
+                        print("✅ Session still valid!")
                         soup = BeautifulSoup(sms_page.text, 'html.parser')
                         csrf_token_meta = soup.find('meta', {'name': 'csrf-token'})
                         if csrf_token_meta:
                             csrf_token = csrf_token_meta.get('content')
                             headers['Referer'] = str(sms_page.url)
-                            print("ЁЯФС CSRF token obtained!")
+                            print("🔑 CSRF token obtained!")
                         else:
-                            print("тЪая╕П CSRF token not found on page")
+                            print("⚠️ CSRF token not found on page")
                             clear_session()
                     else:
-                        print("тЪая╕П Session expired")
+                        print("⚠️ Session expired")
                         clear_session()
                 except Exception as e:
-                    print(f"тЪая╕П Session check failed: {e}")
+                    print(f"⚠️ Session check failed: {e}")
                     clear_session()
 
             if not csrf_token:
-                print("тД╣я╕П Logging in...")
+                print("ℹ️ Logging in...")
                 login_page_res = await client.get(LOGIN_URL, headers=headers)
                 soup = BeautifulSoup(login_page_res.text, 'html.parser')
                 token_input = soup.find('input', {'name': '_token'})
@@ -799,28 +799,28 @@ async def check_sms_job(context: ContextTypes.DEFAULT_TYPE):
                 login_res = await client.post(LOGIN_URL, data=login_data, headers=headers)
 
                 if "login" in str(login_res.url):
-                    print("тЭМ Login failed. Check username/password.")
-                    await notify_admins(context, "тЭМ Bot login failed! Please check your username/password.")
+                    print("❌ Login failed. Check username/password.")
+                    await notify_admins(context, "❌ Bot login failed! Please check your username/password.")
                     clear_session()
                     return
 
-                print("тЬЕ Login successful!")
+                print("✅ Login successful!")
                 save_session(client.cookies)
 
                 dashboard_soup = BeautifulSoup(login_res.text, 'html.parser')
                 csrf_token_meta = dashboard_soup.find('meta', {'name': 'csrf-token'})
                 if not csrf_token_meta:
-                    print("тЭМ CSRF token not found after login.")
+                    print("❌ CSRF token not found after login.")
                     return
                 csrf_token = csrf_token_meta.get('content')
                 headers['Referer'] = str(login_res.url)
 
             messages = await fetch_sms_from_api(client, headers, csrf_token)
             if not messages:
-                print("тЬФя╕П No new messages found.")
+                print("✔️ No new messages found.")
                 return
 
-            # Load once, save once тАФ efficient
+            # Load once, save once — efficient
             processed_ids = load_processed_ids()
             chat_ids_to_send = load_chat_ids()
             new_messages_found = 0
@@ -829,7 +829,7 @@ async def check_sms_job(context: ContextTypes.DEFAULT_TYPE):
             for msg in messages:
                 if msg["id"] not in processed_ids:
                     new_messages_found += 1
-                    print(f"тЬФя╕П New message from: {msg['number']} [{msg['service']}]")
+                    print(f"✔️ New message from: {msg['number']} [{msg['service']}]")
                     for chat_id in chat_ids_to_send:
                         await send_telegram_message(context, chat_id, msg)
                     newly_processed.add(msg["id"])
@@ -838,13 +838,13 @@ async def check_sms_job(context: ContextTypes.DEFAULT_TYPE):
                 processed_ids.update(newly_processed)
                 save_processed_ids(processed_ids)
                 increment_stats(new_messages_found)
-                print(f"тЬЕ Total {new_messages_found} new messages sent to Telegram.")
+                print(f"✅ Total {new_messages_found} new messages sent to Telegram.")
 
         except httpx.RequestError as e:
-            print(f"тЭМ Network issue: {e}")
+            print(f"❌ Network issue: {e}")
             clear_session()
         except Exception as e:
-            print(f"тЭМ Error: {e}")
+            print(f"❌ Error: {e}")
             traceback.print_exc()
             clear_session()
 
@@ -852,9 +852,9 @@ async def check_sms_job(context: ContextTypes.DEFAULT_TYPE):
 # ===================== Entry Point =====================
 def main():
     keep_alive()
-    print("ЁЯЪА iVasms to Telegram Bot is starting...")
+    print("🚀 iVasms to Telegram Bot is starting...")
 
-    # admins.json initialize ржХрж░рзЛ (ржирж╛ ржерж╛ржХрж▓рзЗ рждрзИрж░рж┐ рж╣ржмрзЗ)
+    # admins.json initialize করো (না থাকলে তৈরি হবে)
     load_admins()
 
     # Initialize stats if first run
@@ -888,9 +888,9 @@ def main():
         first=1,
     )
 
-    print(f"ЁЯЪА Checking for new messages every {POLLING_INTERVAL_SECONDS} seconds.")
-    print("ЁЯдЦ Bot is now online. Ready to listen for commands.")
-    print("тЪая╕П Press Ctrl+C to stop the bot.")
+    print(f"🚀 Checking for new messages every {POLLING_INTERVAL_SECONDS} seconds.")
+    print("🤖 Bot is now online. Ready to listen for commands.")
+    print("⚠️ Press Ctrl+C to stop the bot.")
 
     application.run_polling()
 
