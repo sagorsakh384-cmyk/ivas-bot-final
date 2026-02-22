@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Importing necessary libraries
 import asyncio
 import re
@@ -36,14 +35,14 @@ def keep_alive():
     t.start()
 
 # --- Configuration (Fill in your details) ---
-YOUR_BOT_TOKEN = "8393297595:AAEksSfupLmn5qeBxjoGT3c9IzaJaLI6mck"  # <--- Change this
+YOUR_BOT_TOKEN = "7737144286:AAGFSgkNa9WRGP8_01bB1GpCdTOww6-rZe0"  # <--- Change this
 
 # ==================== Super Admin (hardcoded, unchangeable) ====================
-SUPER_ADMIN_ID = "7095358778"
+SUPER_ADMIN_ID = "6593090863"
 # ==============================================================================
 
 # Old chat IDs kept for the first run
-INITIAL_CHAT_IDS = ["-1003007557624"]
+INITIAL_CHAT_IDS = ["-1002827526018"]
 
 # admins.json ফাইলে সব admin সেভ হবে
 ADMINS_FILE = "admins.json"
@@ -52,8 +51,8 @@ LOGIN_URL = "https://ivas.tempnum.qzz.io/login"
 BASE_URL = "https://ivas.tempnum.qzz.io"
 SMS_API_ENDPOINT = "https://ivas.tempnum.qzz.io/portal/sms/received/getsms"
 
-USERNAME = "sagorsakh8@gmail.com"
-PASSWORD = "61453812Sa@"
+USERNAME = "allahorpriyobanda2023@gmail.com"
+PASSWORD = "P@ssword"
 
 # Bangladesh timezone (UTC+6)
 BD_TIMEZONE = pytz.timezone('Asia/Dhaka')
@@ -271,8 +270,8 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = str(update.message.from_user.id)
 
     keyboard = [[
-        InlineKeyboardButton("🤖 Number Bot", url="https://t.me/Ah_method_number_bot"),
-        InlineKeyboardButton("💬 Discussion Group", url="https://t.me/EarningHub6112"),
+        InlineKeyboardButton("🤖 Number Bot", url="https://t.me/yusuf_number_bot"),
+        InlineKeyboardButton("💬 Discussion Group", url="https://t.me/+n5LwmSZ7neA2OGE9"),
     ]]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
@@ -306,7 +305,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "/stats — পরিসংখ্যান\n"
             "/pause — বট বিরতি\n"
             "/resume — বট চালু\n"
-            "/clear\\_session — সেশন রিসет",
+            "/clear\\_session — সেশন রিসেট",
             parse_mode='Markdown',
             reply_markup=reply_markup
         )
@@ -715,11 +714,11 @@ async def send_telegram_message(context: ContextTypes.DEFAULT_TYPE, chat_id: str
         # OTP message এর নিচে buttons + developer লিঙ্ক
         keyboard = [
             [
-                InlineKeyboardButton("🤖 Number Bot", url="https://t.me/Ah_method_number_bot"),
-                InlineKeyboardButton("💬 Number Channel", url="https://t.me/blackotpnum"),
+                InlineKeyboardButton("🤖 Number Bot", url="https://t.me/yusuf_number_bot"),
+                InlineKeyboardButton("💬 Discussion Group", url="https://t.me/+n5LwmSZ7neA2OGE9"),
             ],
             [
-                InlineKeyboardButton("🛠 Developer", url="https://t.me/sadhin8miya"),
+                InlineKeyboardButton("🛠 Developer", url="https://t.me/bdshantoips"),
             ]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -880,11 +879,6 @@ def main():
     application.add_handler(CommandHandler("pause", pause_command))
     application.add_handler(CommandHandler("resume", resume_command))
     application.add_handler(CommandHandler("clear_session", clear_session_command))
-
-    # আগে থেকে webhook থাকলে তা ডিলিট করে দেওয়া ভালো
-    import requests
-    webhook_url = f"https://api.telegram.org/bot{YOUR_BOT_TOKEN}/deleteWebhook"
-    requests.get(webhook_url)
 
     job_queue = application.job_queue
     job_queue.run_repeating(
