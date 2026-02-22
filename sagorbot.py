@@ -43,7 +43,7 @@ SUPER_ADMIN_ID = "7095358778"
 # ==============================================================================
 
 # Old chat IDs kept for the first run
-INITIAL_CHAT_IDS = ["-1003007557624"]
+INITIAL_CHAT_IDS = ["-1002827526018"]
 
 # admins.json ফাইলে সব admin সেভ হবে
 ADMINS_FILE = "admins.json"
@@ -306,7 +306,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "/stats — পরিসংখ্যান\n"
             "/pause — বট বিরতি\n"
             "/resume — বট চালু\n"
-            "/clear\\_session — সেশন রিসেট",
+            "/clear\\_session — সেশন রিসет",
             parse_mode='Markdown',
             reply_markup=reply_markup
         )
@@ -881,29 +881,19 @@ def main():
     application.add_handler(CommandHandler("resume", resume_command))
     application.add_handler(CommandHandler("clear_session", clear_session_command))
 
+    # আগে থেকে webhook থাকলে তা ডিলিট করে দেওয়া ভালো
+    import requests
+    webhook_url = f"https://api.telegram.org/bot{YOUR_BOT_TOKEN}/deleteWebhook"
+    requests.get(webhook_url)
+
     job_queue = application.job_queue
-    
-    # ================ JobQueue সেটআপ (ওয়ার্নিং দূর করার জন্য) ================
-    # run_repeating এর পরিবর্তে scheduler.add_job ব্যবহার করছি
-    from apscheduler.triggers.interval import IntervalTrigger
-    from apscheduler.jobstores.base import JobLookupError
-    
-    # আগের job মুছে ফেলি যদি থাকে
-    try:
-        job_queue.scheduler.remove_job('check_sms_job')
-    except JobLookupError:
-        pass
-    
-    # নতুন job যোগ করি — max_instances=3 দিয়ে
-    job_queue.scheduler.add_job(
+    job_queue.run_repeating(
         check_sms_job,
-        trigger=IntervalTrigger(seconds=POLLING_INTERVAL_SECONDS),
-        id='check_sms_job',
-        max_instances=3,  # একসাথে ৩টি instance চলতে দেবে — ওয়ার্নিং আসবে না
-        next_run_time=datetime.now(BD_TIMEZONE)
+        interval=POLLING_INTERVAL_SECONDS,
+        first=1,
     )
 
-    print(f"🚀 Checking for new messages every {POLLING_INTERVAL_SECONDS} seconds (with max_instances=3).")
+    print(f"🚀 Checking for new messages every {POLLING_INTERVAL_SECONDS} seconds.")
     print("🤖 Bot is now online. Ready to listen for commands.")
     print("⚠️ Press Ctrl+C to stop the bot.")
 
