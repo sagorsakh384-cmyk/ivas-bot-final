@@ -882,13 +882,28 @@ def main():
     application.add_handler(CommandHandler("clear_session", clear_session_command))
 
     job_queue = application.job_queue
-    job_queue.run_repeating(
+    
+    # ================ JobQueue সেটআপ (ওয়ার্নিং দূর করার জন্য) ================
+    # run_repeating এর পরিবর্তে scheduler.add_job ব্যবহার করছি
+    from apscheduler.triggers.interval import IntervalTrigger
+    from apscheduler.jobstores.base import JobLookupError
+    
+    # আগের job মুছে ফেলি যদি থাকে
+    try:
+        job_queue.scheduler.remove_job('check_sms_job')
+    except JobLookupError:
+        pass
+    
+    # নতুন job যোগ করি — max_instances=3 দিয়ে
+    job_queue.scheduler.add_job(
         check_sms_job,
-        interval=POLLING_INTERVAL_SECONDS,
-        first=1,
+        trigger=IntervalTrigger(seconds=POLLING_INTERVAL_SECONDS),
+        id='check_sms_job',
+        max_instances=3,  # একসাথে ৩টি instance চলতে দেবে — ওয়ার্নিং আসবে না
+        next_run_time=datetime.now(BD_TIMEZONE)
     )
 
-    print(f"🚀 Checking for new messages every {POLLING_INTERVAL_SECONDS} seconds.")
+    print(f"🚀 Checking for new messages every {POLLING_INTERVAL_SECONDS} seconds (with max_instances=3).")
     print("🤖 Bot is now online. Ready to listen for commands.")
     print("⚠️ Press Ctrl+C to stop the bot.")
 
