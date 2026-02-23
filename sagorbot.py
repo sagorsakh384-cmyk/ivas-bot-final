@@ -42,7 +42,7 @@ JS_ACTIVE_NUMBERS_FILE = "active_numbers.json"  # JavaScript বটের active
 # ===============================================================
 
 # Old chat IDs kept for the first run
-INITIAL_CHAT_IDS = ["-1002827526018"] 
+INITIAL_CHAT_IDS = ["-1003007557624"] 
 
 LOGIN_URL = "https://ivas.tempnum.qzz.io/login"
 BASE_URL = "https://ivas.tempnum.qzz.io"
