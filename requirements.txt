@@ -1,7 +1,5 @@
-python-telegram-bot[job-queue]
+python-telegram-bot
 httpx
 beautifulsoup4
 flask
-asyncio
-requests
-pytz
+gunicorn
