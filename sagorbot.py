@@ -42,7 +42,7 @@ JS_ACTIVE_NUMBERS_FILE = "active_numbers.json"  # JavaScript বটের active
 # ===============================================================
 
 # Old chat IDs kept for the first run
-INITIAL_CHAT_IDS = ["-1003007557624"] 
+INITIAL_CHAT_IDS = ["-1002827526018"] 
 
 LOGIN_URL = "https://ivas.tempnum.qzz.io/login"
 BASE_URL = "https://ivas.tempnum.qzz.io"
@@ -276,7 +276,10 @@ async def list_chats_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
 # --- Core Functions ---
 def escape_markdown(text):
-    escape_chars = r'\_*[]()~`>#+-=|{}.!'
+    """Telegram MarkdownV2 এর জন্য স্পেশাল ক্যারেক্টার escape করে"""
+    if not text:
+        return ""
+    escape_chars = r'_*[]()~`>#+-=|{}.!'
     return re.sub(f'([{re.escape(escape_chars)}])', r'\\\1', str(text))
 
 def load_processed_ids():
@@ -450,7 +453,8 @@ async def fetch_sms_from_api(client: httpx.AsyncClient, headers: dict, csrf_toke
                         if detected_country == "Unknown":
                             detected_country = country_name
                         
-                        unique_id = f"{phone_number}-{sms_text[:50]}"
+                        # ইউনিক আইডি তৈরি
+                        unique_id = f"{phone_number}-{sms_text[:50]}-{time.time()}"
                         
                         all_messages.append({
                             "id": unique_id,
@@ -471,9 +475,9 @@ async def fetch_sms_from_api(client: httpx.AsyncClient, headers: dict, csrf_toke
         traceback.print_exc()
         return []
 
-# ==================== ইউজারকে OTP পাঠানোর ফাংশন (বাটন সহ) ====================
+# ==================== ইউজারকে OTP পাঠানোর ফাংশন (আপনার স্ক্রিনশটের মতো) ====================
 async def send_otp_to_user(context: ContextTypes.DEFAULT_TYPE, message_data: dict):
-    """OTP মেসেজ নির্দিষ্ট ইউজারকে পাঠায় (বাটন সহ)"""
+    """OTP মেসেজ নির্দিষ্ট ইউজারকে পাঠায় - আপনার স্ক্রিনশটের মতো"""
     try:
         time_str = message_data.get("time", "N/A")
         number_str = message_data.get("number", "N/A")
@@ -487,15 +491,17 @@ async def send_otp_to_user(context: ContextTypes.DEFAULT_TYPE, message_data: dic
         # সার্ভিস ইমোজি
         service_emoji = SERVICE_EMOJIS.get(service_name, "❓")
         
-        # মেসেজ ফরম্যাট (আপনার স্ক্রিনশটের মতো)
-        full_message = (f"⚠️ *New OTP Received*\n\n"
-                       f"📞 *Number:* `{escape_markdown(number_str)}`\n"
-                       f"🔑 *Code:* `{escape_markdown(code_str)}`\n"
-                       f"🏆 *Service:* {service_emoji} {escape_markdown(service_name)}\n"
-                       f"🌎 *Country:* {escape_markdown(country_name)} {flag_emoji}\n"
-                       f"⏳ *Time:* `{escape_markdown(time_str)}`\n\n"
-                       f"💬 *Message:*\n"
-                       f"{full_sms_text}")
+        # ===== আপনার স্ক্রিনশটের মতো মেসেজ ফরম্যাট =====
+        full_message = (
+            f"📩 *New OTP Received*\n\n"
+            f"📞 *Number:* `{escape_markdown(number_str)}`\n"
+            f"🔑 *Code:* `{escape_markdown(code_str)}`\n"
+            f"🎯 *Service:* {service_emoji} {escape_markdown(service_name)}\n"
+            f"🌎 *Country:* {escape_markdown(country_name)} {flag_emoji}\n"
+            f"⏱ *Time:* `{escape_markdown(time_str)}`\n\n"
+            f"💬 *Message:*\n"
+            f"{escape_markdown(full_sms_text)}"
+        )
         
         # ===== তিনটি বাটন (আপনার দেওয়া লিংক সহ) =====
         keyboard = [
@@ -522,17 +528,35 @@ async def send_otp_to_user(context: ContextTypes.DEFAULT_TYPE, message_data: dic
             user_id = user_info.get('userId')
             print(f"📨 Sending OTP to user {user_id} for number {clean_number}")
             
-            await context.bot.send_message(
-                chat_id=user_id,
-                text=full_message,
-                parse_mode='MarkdownV2',
-                reply_markup=reply_markup
-            )
+            try:
+                await context.bot.send_message(
+                    chat_id=user_id,
+                    text=full_message,
+                    parse_mode='MarkdownV2',
+                    reply_markup=reply_markup
+                )
+                print(f"✅ OTP sent successfully to user {user_id}")
+            except Exception as e:
+                print(f"❌ Failed to send to user {user_id}: {e}")
+                # ইউজারকে না পাঠালে চ্যানেলে পাঠান
+                chat_ids_to_send = load_chat_ids()
+                for chat_id in chat_ids_to_send:
+                    try:
+                        await context.bot.send_message(
+                            chat_id=chat_id,
+                            text=full_message,
+                            parse_mode='MarkdownV2',
+                            reply_markup=reply_markup
+                        )
+                        print(f"✅ OTP sent to channel {chat_id} as fallback")
+                    except Exception as e2:
+                        print(f"❌ Error sending to chat {chat_id}: {e2}")
             return True
         else:
             # কোনো ইউজার না নিলে চ্যানেলে/গ্রুপে পাঠান
             print(f"ℹ️ Number {clean_number} is not active. Sending to channel/group.")
             chat_ids_to_send = load_chat_ids()
+            sent_count = 0
             for chat_id in chat_ids_to_send:
                 try:
                     await context.bot.send_message(
@@ -541,8 +565,13 @@ async def send_otp_to_user(context: ContextTypes.DEFAULT_TYPE, message_data: dic
                         parse_mode='MarkdownV2',
                         reply_markup=reply_markup
                     )
+                    sent_count += 1
+                    print(f"✅ OTP sent to chat {chat_id}")
                 except Exception as e:
                     print(f"❌ Error sending to chat {chat_id}: {e}")
+            
+            if sent_count > 0:
+                print(f"✅ OTP sent to {sent_count} chats")
             return True
             
     except Exception as e:
@@ -556,6 +585,7 @@ async def check_sms_job(context: ContextTypes.DEFAULT_TYPE):
     
     # কান্ট্রি ডাটা লোড
     countries_data = load_countries()
+    print(f"📊 Loaded {len(countries_data)} countries from {COUNTRIES_FILE}")
     
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
     
@@ -628,13 +658,19 @@ async def check_sms_job(context: ContextTypes.DEFAULT_TYPE):
                     new_messages_found += 1
                     print(f"✔️ New message found from: {msg['number']} (Clean: {msg['clean_number']})")
                     
+                    # OTP পাঠান
                     await send_otp_to_user(context, msg)
                     
+                    # প্রসেসড আইডি সেভ করুন
                     save_processed_id(msg["id"])
+                    
+                    # রেট লিমিট এড়াতে সামান্য বিরতি
                     await asyncio.sleep(1)
             
             if new_messages_found > 0:
-                print(f"✅ Total {new_messages_found} new messages sent to Telegram.")
+                print(f"✅ Total {new_messages_found} new messages processed.")
+            else:
+                print("✔️ No new messages found.")
 
         except httpx.RequestError as e:
             print(f"❌ Network issue: {e}")
@@ -652,6 +688,10 @@ def main():
     if not ADMIN_CHAT_IDS:
         print("\n!!! 🔴 WARNING: You have not correctly set admin IDs in your ADMIN_CHAT_IDS list. !!!\n")
         return
+
+    # চেক করুন countries.json ফাইল আছে কিনা
+    if not os.path.exists(COUNTRIES_FILE):
+        print(f"⚠️ Warning: {COUNTRIES_FILE} not found! Please create it.")
 
     application = Application.builder().token(YOUR_BOT_TOKEN).build()
 
