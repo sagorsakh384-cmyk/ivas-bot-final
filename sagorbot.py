@@ -193,6 +193,7 @@ def load_countries():
             with open(COUNTRIES_FILE, 'r', encoding='utf-8') as f:
                 return json.load(f)
         except:
+            print(f"⚠️ Error loading {COUNTRIES_FILE}")
             return {}
     return {}
 
@@ -330,33 +331,60 @@ def clean_phone_number(phone_number):
     cleaned = re.sub(r'[^0-9]', '', str(phone_number))
     return cleaned if cleaned else None
 
-# --- Extract Country from Number ---
-def get_country_from_number(phone_number, countries_data):
-    """ফোন নাম্বার থেকে কান্ট্রি কোড বের করে"""
-    if not phone_number or not countries_data:
+# --- Extract Country from Number with DIRECT FLAG MAPPING (সলিড সমাধান) ---
+def get_country_and_flag_from_number(phone_number):
+    """ফোন নাম্বার থেকে কান্ট্রি নাম এবং ফ্ল্যাগ বের করে - সরাসরি ম্যাপিং ব্যবহার করে"""
+    if not phone_number:
         return "Unknown", "🏴‍☠️"
     
     cleaned = clean_phone_number(phone_number)
     if not cleaned:
         return "Unknown", "🏴‍☠️"
     
+    # সরাসরি ফ্ল্যাগ ম্যাপিং (JSON ফাইল ইগনোর করে)
+    country_map = {
+        "225": {"name": "IVORY COAST", "flag": "🇨🇮"},
+        "880": {"name": "BANGLADESH", "flag": "🇧🇩"},
+        "91": {"name": "INDIA", "flag": "🇮🇳"},
+        "92": {"name": "PAKISTAN", "flag": "🇵🇰"},
+        "977": {"name": "NEPAL", "flag": "🇳🇵"},
+        "94": {"name": "SRI LANKA", "flag": "🇱🇰"},
+        "1": {"name": "USA/CANADA", "flag": "🇺🇸"},
+        "44": {"name": "UNITED KINGDOM", "flag": "🇬🇧"},
+        "966": {"name": "SAUDI ARABIA", "flag": "🇸🇦"},
+        "971": {"name": "UAE", "flag": "🇦🇪"},
+        "965": {"name": "KUWAIT", "flag": "🇰🇼"},
+        "33": {"name": "FRANCE", "flag": "🇫🇷"},
+        "49": {"name": "GERMANY", "flag": "🇩🇪"},
+        "34": {"name": "SPAIN", "flag": "🇪🇸"},
+        "39": {"name": "ITALY", "flag": "🇮🇹"},
+        "7": {"name": "RUSSIA", "flag": "🇷🇺"},
+        "81": {"name": "JAPAN", "flag": "🇯🇵"},
+        "82": {"name": "SOUTH KOREA", "flag": "🇰🇷"},
+        "86": {"name": "CHINA", "flag": "🇨🇳"},
+        "90": {"name": "TURKEY", "flag": "🇹🇷"},
+        "20": {"name": "EGYPT", "flag": "🇪🇬"},
+        "27": {"name": "SOUTH AFRICA", "flag": "🇿🇦"},
+        "234": {"name": "NIGERIA", "flag": "🇳🇬"},
+    }
+    
     # 3 ডিজিটের কান্ট্রি কোড চেক
     if len(cleaned) >= 3:
         code3 = cleaned[:3]
-        if code3 in countries_data:
-            return countries_data[code3]["name"], countries_data[code3]["flag"]
+        if code3 in country_map:
+            return country_map[code3]["name"], country_map[code3]["flag"]
     
     # 2 ডিজিটের কান্ট্রি কোড চেক
     if len(cleaned) >= 2:
         code2 = cleaned[:2]
-        if code2 in countries_data:
-            return countries_data[code2]["name"], countries_data[code2]["flag"]
+        if code2 in country_map:
+            return country_map[code2]["name"], country_map[code2]["flag"]
     
     # 1 ডিজিটের কান্ট্রি কোড চেক
     if len(cleaned) >= 1:
         code1 = cleaned[:1]
-        if code1 in countries_data:
-            return countries_data[code1]["name"], countries_data[code1]["flag"]
+        if code1 in country_map:
+            return country_map[code1]["name"], country_map[code1]["flag"]
     
     return "Unknown", "🏴‍☠️"
 
@@ -393,7 +421,7 @@ def extract_service(sms_text):
     
     return "Unknown"
 
-async def fetch_sms_from_api(client: httpx.AsyncClient, headers: dict, csrf_token: str, countries_data: dict):
+async def fetch_sms_from_api(client: httpx.AsyncClient, headers: dict, csrf_token: str):
     all_messages = []
     try:
         today = datetime.now(timezone.utc)
@@ -448,7 +476,8 @@ async def fetch_sms_from_api(client: httpx.AsyncClient, headers: dict, csrf_toke
                         
                         clean_number = clean_phone_number(phone_number)
                         
-                        detected_country, flag = get_country_from_number(clean_number, countries_data)
+                        # ===== গুরুত্বপূর্ণ: এখানে সরাসরি ফ্ল্যাগ ম্যাপিং ব্যবহার করা হচ্ছে =====
+                        detected_country, flag = get_country_and_flag_from_number(clean_number)
                         
                         if detected_country == "Unknown":
                             detected_country = country_name
@@ -462,11 +491,14 @@ async def fetch_sms_from_api(client: httpx.AsyncClient, headers: dict, csrf_toke
                             "number": phone_number,
                             "clean_number": clean_number,
                             "country": detected_country,
-                            "flag": flag,
+                            "flag": flag,  # ফ্ল্যাগ এখন নিশ্চিতভাবে আসবে
                             "service": service,
                             "code": code,
                             "full_sms": sms_text
                         })
+                        
+                        # ডিবাগ প্রিন্ট
+                        print(f"📊 Processed: {phone_number} -> {detected_country} {flag}")
         
         return all_messages
         
@@ -491,13 +523,16 @@ async def send_otp_to_user(context: ContextTypes.DEFAULT_TYPE, message_data: dic
         # সার্ভিস ইমোজি
         service_emoji = SERVICE_EMOJIS.get(service_name, "❓")
         
+        # ডিবাগ প্রিন্ট
+        print(f"🚩 Sending with flag: {country_name} {flag_emoji}")
+        
         # ===== আপনার স্ক্রিনশটের মতো মেসেজ ফরম্যাট =====
         full_message = (
             f"📩 *New OTP Received*\n\n"
             f"📞 *Number:* `{escape_markdown(number_str)}`\n"
             f"🔑 *Code:* `{escape_markdown(code_str)}`\n"
             f"🎯 *Service:* {service_emoji} {escape_markdown(service_name)}\n"
-            f"🌎 *Country:* {escape_markdown(country_name)} {flag_emoji}\n"
+            f"🌍 *Country:* {escape_markdown(country_name)} {flag_emoji}\n"
             f"⏱ *Time:* `{escape_markdown(time_str)}`\n\n"
             f"💬 *Message:*\n"
             f"{escape_markdown(full_sms_text)}"
@@ -583,10 +618,6 @@ async def send_otp_to_user(context: ContextTypes.DEFAULT_TYPE, message_data: dic
 async def check_sms_job(context: ContextTypes.DEFAULT_TYPE):
     print(f"\n--- [{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}] Checking for new messages ---")
     
-    # কান্ট্রি ডাটা লোড
-    countries_data = load_countries()
-    print(f"📊 Loaded {len(countries_data)} countries from {COUNTRIES_FILE}")
-    
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
     
     saved_cookies = load_session()
@@ -645,7 +676,7 @@ async def check_sms_job(context: ContextTypes.DEFAULT_TYPE):
                 headers['Referer'] = str(login_res.url)
 
             # Fetch SMS
-            messages = await fetch_sms_from_api(client, headers, csrf_token, countries_data)
+            messages = await fetch_sms_from_api(client, headers, csrf_token)
             if not messages: 
                 print("✔️ No new messages found.")
                 return
@@ -657,6 +688,7 @@ async def check_sms_job(context: ContextTypes.DEFAULT_TYPE):
                 if msg["id"] not in processed_ids:
                     new_messages_found += 1
                     print(f"✔️ New message found from: {msg['number']} (Clean: {msg['clean_number']})")
+                    print(f"   Country: {msg['country']} {msg['flag']}")
                     
                     # OTP পাঠান
                     await send_otp_to_user(context, msg)
@@ -684,14 +716,16 @@ async def check_sms_job(context: ContextTypes.DEFAULT_TYPE):
 def main():
     keep_alive()
     print("🚀 iVasms to Telegram Bot is starting...")
+    print("=" * 50)
+    print("📌 কনফিগারেশন:")
+    print(f"   • Number Bot: {NUMBER_BOT_LINK}")
+    print(f"   • Number Channel: {NUMBER_CHANNEL_LINK}")
+    print(f"   • Developer: {DEVELOPER_LINK}")
+    print("=" * 50)
 
     if not ADMIN_CHAT_IDS:
         print("\n!!! 🔴 WARNING: You have not correctly set admin IDs in your ADMIN_CHAT_IDS list. !!!\n")
         return
-
-    # চেক করুন countries.json ফাইল আছে কিনা
-    if not os.path.exists(COUNTRIES_FILE):
-        print(f"⚠️ Warning: {COUNTRIES_FILE} not found! Please create it.")
 
     application = Application.builder().token(YOUR_BOT_TOKEN).build()
 
