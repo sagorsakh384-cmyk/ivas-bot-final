@@ -52,8 +52,8 @@ LOGIN_URL = "https://ivas.tempnum.qzz.io/login"
 BASE_URL = "https://ivas.tempnum.qzz.io"
 SMS_API_ENDPOINT = "https://ivas.tempnum.qzz.io/portal/sms/received/getsms"
 
-USERNAME = "ridayriday999@gmail.com"
-PASSWORD = "@@ridayMD12345"
+USERNAME = "sagorsakh8@gmail.com"
+PASSWORD = "61453812Sa@"
 
 # Bangladesh timezone (UTC+6)
 BD_TIMEZONE = pytz.timezone('Asia/Dhaka')
