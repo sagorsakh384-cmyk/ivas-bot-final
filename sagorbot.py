@@ -59,7 +59,7 @@ PASSWORD = "61453812Sa@"
 BD_TIMEZONE = pytz.timezone('Asia/Dhaka')
 
 # Polling interval in seconds
-POLLING_INTERVAL_SECONDS = 10
+POLLING_INTERVAL_SECONDS = 2
 STATE_FILE = "processed_sms_ids.json"
 CHAT_IDS_FILE = "chat_ids.json"
 SESSION_FILE = "session_cookies.pkl"
