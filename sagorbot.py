@@ -656,7 +656,7 @@ async def check_sms_job(context: ContextTypes.DEFAULT_TYPE):
 
     saved_cookies = load_session()
 
-    async with httpx.AsyncClient(timeout=60.0, follow_redirects=True, cookies=saved_cookies) as client:
+    async with httpx.AsyncClient(timeout=120.0, follow_redirects=True, cookies=saved_cookies) as client:
         try:
             csrf_token = None
 
