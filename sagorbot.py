@@ -40,7 +40,7 @@ LIVE_SMS_URL = "https://ivas.tempnum.qzz.io/portal/live/my_sms"  # ⚡ Live প�
 USERNAME = "sagorsakh8@gmail.com"
 PASSWORD = "61453812Sa@"
 
-POLLING_INTERVAL_SECONDS = 3   # ⚡ প্রতি ৩ সেকেন্ডে Live পেজ চেক
+POLLING_INTERVAL_SECONDS = 7   # ⚡ প্রতি ৭ সেকেন্ডে Live পেজ চেক
 STATE_FILE = "processed_sms_ids.json"
 CHAT_IDS_FILE = "chat_ids.json"
 SESSION_FILE = "session_cookies.pkl"
@@ -535,7 +535,7 @@ def main():
     application.add_handler(CommandHandler("list_chats", list_chats_command))
 
     job_queue = application.job_queue
-    job_queue.run_repeating(check_sms_job, interval=POLLING_INTERVAL_SECONDS, first=1)
+    job_queue.run_repeating(check_sms_job, interval=POLLING_INTERVAL_SECONDS, first=1, job_kwargs={"max_instances": 1})
 
     print("🤖 Bot is online!")
     application.run_polling()
