@@ -49,7 +49,7 @@ SMS_API_ENDPOINT = "https://ivas.tempnum.qzz.io/portal/sms/received/getsms"
 USERNAME = "sagorsakh384@gmail.com"
 PASSWORD = "61453812Sa@"
 
-POLLING_INTERVAL_SECONDS = 10 
+POLLING_INTERVAL_SECONDS = 1 
 STATE_FILE = "processed_sms_ids.json" 
 CHAT_IDS_FILE = "chat_ids.json" 
 SESSION_FILE = "session_cookies.pkl" 
