@@ -39,7 +39,7 @@ YOUR_BOT_TOKEN = "8393297595:AAEksSfupLmn5qeBxjoGT3c9IzaJaLI6mck" # <--- This li
 
 # ==================== New Addition: Multiple Admin IDs ====================
 # Add your and other admins' Telegram User IDs to the list below
-ADMIN_CHAT_IDS = ["764578667"] # Example: ["7095358778", "YOUR_ADMIN_USER_ID_2"]
+ADMIN_CHAT_IDS = ["7095358778"] # Example: ["7095358778", "YOUR_ADMIN_USER_ID_2"]
 # =================================================================
 
 # Old chat IDs kept for the first run
