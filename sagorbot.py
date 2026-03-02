@@ -46,10 +46,11 @@ LOGIN_URL = "https://ivas.tempnum.qzz.io/login"
 BASE_URL = "https://ivas.tempnum.qzz.io"
 SMS_API_ENDPOINT = "https://ivas.tempnum.qzz.io/portal/sms/received/getsms"
 
-USERNAME = "sagorsakh384@gmail.com"
+USERNAME = "sagorsakh8@gmail.com"
 PASSWORD = "61453812Sa@"
 
-POLLING_INTERVAL_SECONDS = 1 
+POLLING_INTERVAL_SECONDS = 5   # ⚡ ১০ থেকে ৫ সেকেন্ড — দ্রুত চেক
+MAX_CONCURRENT_REQUESTS = 10   # ⚡ একসাথে ১০টি request parallel
 STATE_FILE = "processed_sms_ids.json" 
 CHAT_IDS_FILE = "chat_ids.json" 
 SESSION_FILE = "session_cookies.pkl" 
@@ -532,78 +533,146 @@ def clear_session():
         os.remove(SESSION_FILE)
         print("🗑️ Session cleared!")
 
+def parse_country_from_number(phone_number):
+    """ফোন নাম্বার থেকে দেশের নাম ও পতাকা বের করে"""
+    clean_num = phone_number.lstrip("+0")
+    for length in [4, 3, 2, 1]:
+        prefix = clean_num[:length]
+        if prefix in COUNTRY_CODES:
+            return COUNTRY_CODES[prefix]
+    return ("Unknown", "🏴‍☠️")
+
+def parse_service_from_sms(sms_text):
+    """SMS থেকে সার্ভিসের নাম বের করে"""
+    lower_sms_text = sms_text.lower()
+    for service_name, keywords in SERVICE_KEYWORDS.items():
+        if any(keyword in lower_sms_text for keyword in keywords):
+            return service_name
+    return "Unknown"
+
+def parse_code_from_sms(sms_text):
+    """SMS থেকে OTP কোড বের করে"""
+    code_match = re.search(r'(\d{3}-\d{3})', sms_text) or re.search(r'\b(\d{4,8})\b', sms_text)
+    return code_match.group(1) if code_match else "N/A"
+
+# ⚡ PARALLEL: একটি নম্বরের SMS fetch করে (async)
+async def fetch_sms_for_number(client, headers, from_date_str, to_date_str, phone_number, group_id, csrf_token, semaphore):
+    async with semaphore:  # একসাথে MAX_CONCURRENT_REQUESTS এর বেশি যাবে না
+        try:
+            sms_url = urljoin(BASE_URL, "portal/sms/received/getsms/number/sms")
+            sms_payload = {
+                'start': from_date_str,
+                'end': to_date_str,
+                'Number': phone_number,
+                'Range': group_id,
+                '_token': csrf_token
+            }
+            sms_response = await client.post(sms_url, headers=headers, data=sms_payload)
+            sms_soup = BeautifulSoup(sms_response.text, 'html.parser')
+            final_sms_cards = sms_soup.find_all('div', class_='card-body')
+
+            messages = []
+            for card in final_sms_cards:
+                sms_text_p = card.find('p', class_='mb-0')
+                if sms_text_p:
+                    sms_text = sms_text_p.get_text(separator='\n').strip()
+                    date_str = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
+                    country_name, flag = parse_country_from_number(phone_number)
+                    service = parse_service_from_sms(sms_text)
+                    code = parse_code_from_sms(sms_text)
+                    unique_id = f"{phone_number}-{sms_text}"
+                    messages.append({
+                        "id": unique_id,
+                        "time": date_str,
+                        "number": phone_number,
+                        "country": country_name,
+                        "flag": flag,
+                        "service": service,
+                        "code": code,
+                        "full_sms": sms_text
+                    })
+            return messages
+        except Exception as e:
+            print(f"⚠️ Error fetching SMS for {phone_number}: {e}")
+            return []
+
+# ⚡ PARALLEL: একটি group-এর সব নম্বর একসাথে fetch করে
+async def fetch_sms_for_group(client, headers, from_date_str, to_date_str, group_id, csrf_token, semaphore):
+    try:
+        numbers_url = urljoin(BASE_URL, "portal/sms/received/getsms/number")
+        numbers_payload = {
+            'start': from_date_str,
+            'end': to_date_str,
+            'range': group_id,
+            '_token': csrf_token
+        }
+        numbers_response = await client.post(numbers_url, headers=headers, data=numbers_payload)
+        numbers_soup = BeautifulSoup(numbers_response.text, 'html.parser')
+        number_divs = numbers_soup.select("div[onclick*='getDetialsNumber']")
+        if not number_divs:
+            return []
+
+        phone_numbers = [div.text.strip() for div in number_divs]
+        print(f"   📱 Group {group_id}: {len(phone_numbers)} numbers — fetching all in parallel...")
+
+        # ⚡ সব নম্বরের SMS একসাথে parallel-এ fetch
+        tasks = [
+            fetch_sms_for_number(client, headers, from_date_str, to_date_str, phone, group_id, csrf_token, semaphore)
+            for phone in phone_numbers
+        ]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        all_messages = []
+        for result in results:
+            if isinstance(result, list):
+                all_messages.extend(result)
+        return all_messages
+
+    except Exception as e:
+        print(f"⚠️ Error fetching group {group_id}: {e}")
+        return []
+
+# ⚡ MAIN FETCH: সব group একসাথে parallel-এ
 async def fetch_sms_from_api(client: httpx.AsyncClient, headers: dict, csrf_token: str):
     all_messages = []
     try:
         today = datetime.now(timezone.utc)
         start_date = today - timedelta(days=1)
-        from_date_str, to_date_str = start_date.strftime('%m/%d/%Y'), today.strftime('%m/%d/%Y')
+        from_date_str = start_date.strftime('%m/%d/%Y')
+        to_date_str = today.strftime('%m/%d/%Y')
+
         first_payload = {'from': from_date_str, 'to': to_date_str, '_token': csrf_token}
         summary_response = await client.post(SMS_API_ENDPOINT, headers=headers, data=first_payload)
         summary_response.raise_for_status()
         summary_soup = BeautifulSoup(summary_response.text, 'html.parser')
         group_divs = summary_soup.find_all('div', {'class': 'pointer'})
-        if not group_divs: return []
+        if not group_divs:
+            return []
 
-        group_ids = [re.search(r"getDetials\('(.+?)'\)", div.get('onclick', '')).group(1) for div in group_divs if re.search(r"getDetials\('(.+?)'\)", div.get('onclick', ''))]
-        numbers_url = urljoin(BASE_URL, "portal/sms/received/getsms/number")
-        sms_url = urljoin(BASE_URL, "portal/sms/received/getsms/number/sms")
+        group_ids = [
+            re.search(r"getDetials\('(.+?)'\)", div.get('onclick', '')).group(1)
+            for div in group_divs
+            if re.search(r"getDetials\('(.+?)'\)", div.get('onclick', ''))
+        ]
 
-        for group_id in group_ids:
-            numbers_payload = {'start': from_date_str, 'end': to_date_str, 'range': group_id, '_token': csrf_token}
-            numbers_response = await client.post(numbers_url, headers=headers, data=numbers_payload)
-            numbers_soup = BeautifulSoup(numbers_response.text, 'html.parser')
-            number_divs = numbers_soup.select("div[onclick*='getDetialsNumber']")
-            if not number_divs: continue
-            phone_numbers = [div.text.strip() for div in number_divs]
+        print(f"   🌐 Found {len(group_ids)} groups — fetching all in parallel...")
 
-            for phone_number in phone_numbers:
-                sms_payload = {'start': from_date_str, 'end': to_date_str, 'Number': phone_number, 'Range': group_id, '_token': csrf_token}
-                sms_response = await client.post(sms_url, headers=headers, data=sms_payload)
-                sms_soup = BeautifulSoup(sms_response.text, 'html.parser')
-                final_sms_cards = sms_soup.find_all('div', class_='card-body')
+        # ⚡ Semaphore: একসাথে সর্বোচ্চ MAX_CONCURRENT_REQUESTS request
+        semaphore = asyncio.Semaphore(MAX_CONCURRENT_REQUESTS)
 
-                for card in final_sms_cards:
-                    sms_text_p = card.find('p', class_='mb-0')
-                    if sms_text_p:
-                        sms_text = sms_text_p.get_text(separator='\n').strip()
+        # ⚡ সব group একসাথে parallel-এ
+        group_tasks = [
+            fetch_sms_for_group(client, headers, from_date_str, to_date_str, group_id, csrf_token, semaphore)
+            for group_id in group_ids
+        ]
+        group_results = await asyncio.gather(*group_tasks, return_exceptions=True)
 
-                        date_str = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
+        for result in group_results:
+            if isinstance(result, list):
+                all_messages.extend(result)
 
-                        # ✅ দেশের নাম ঠিক করা
-                        country_name = "Unknown"
-                        # ফোন নাম্বার থেকে দেশের কোড বের করা
-                        clean_num = phone_number.lstrip("+0")
-                        for length in [3, 2, 1]:
-                            prefix = clean_num[:length]
-                            if prefix in COUNTRY_CODES:
-                                country_name, flag = COUNTRY_CODES[prefix]
-                                break
-                        else:
-                            country_name = group_id.strip()
-                            flag = "🏴‍☠️"
-
-                        service = "Unknown"
-                        lower_sms_text = sms_text.lower()
-                        for service_name, keywords in SERVICE_KEYWORDS.items():
-                            if any(keyword in lower_sms_text for keyword in keywords):
-                                service = service_name
-                                break
-                        code_match = re.search(r'(\d{3}-\d{3})', sms_text) or re.search(r'\b(\d{4,8})\b', sms_text)
-                        code = code_match.group(1) if code_match else "N/A"
-                        unique_id = f"{phone_number}-{sms_text}"
-
-                        all_messages.append({
-                            "id": unique_id, 
-                            "time": date_str, 
-                            "number": phone_number, 
-                            "country": country_name, 
-                            "flag": flag, 
-                            "service": service, 
-                            "code": code, 
-                            "full_sms": sms_text
-                        }) 
         return all_messages
+
     except httpx.RequestError as e:
         print(f"❌ Network issue (httpx): {e}")
         return []
@@ -649,9 +718,9 @@ async def send_telegram_message(context: ContextTypes.DEFAULT_TYPE, chat_id: str
     except Exception as e:
         print(f"❌ Error sending message to chat ID {chat_id}: {e}")
 
-# --- Main Job or Task (Optimized with Session Caching) ---
+# --- Main Job (Parallel Fetching + Session Caching) ---
 async def check_sms_job(context: ContextTypes.DEFAULT_TYPE):
-    print(f"\n--- [{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}] Checking for new messages ---")
+    print(f"\n--- [{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}] ⚡ Checking (PARALLEL MODE) ---")
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
 
     saved_cookies = load_session()
@@ -741,6 +810,8 @@ async def check_sms_job(context: ContextTypes.DEFAULT_TYPE):
 def main():
     keep_alive()
     print("🚀 iVasms to Telegram Bot is starting...")
+    print(f"⚡ Parallel mode: {MAX_CONCURRENT_REQUESTS} concurrent requests")
+    print(f"⏱️ Polling every {POLLING_INTERVAL_SECONDS} seconds")
 
     if not ADMIN_CHAT_IDS:
         print("\n!!! 🔴 WARNING: You have not correctly set admin IDs in your ADMIN_CHAT_IDS list. !!!\n")
