@@ -1,6 +1,6 @@
-python-telegram-bot[job-queue]==20.7
-httpx==0.25.2
-beautifulsoup4==4.12.3
-flask==3.0.0
-gunicorn==21.2.0
-pytz==2024.1
+python-telegram-bot[job-queue]
+httpx
+beautifulsoup4
+flask
+python-socketio[asyncio_client]
+aiohttp
