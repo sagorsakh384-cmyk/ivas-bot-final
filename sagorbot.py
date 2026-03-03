@@ -10,6 +10,7 @@ import pickle
 from flask import Flask
 import threading
 from datetime import datetime, timezone
+import socketio
 from telegram.ext import Application, CommandHandler, ContextTypes
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 
@@ -35,12 +36,12 @@ INITIAL_CHAT_IDS = ["-1003007557624"]
 
 LOGIN_URL = "https://ivas.tempnum.qzz.io/login"
 BASE_URL = "https://ivas.tempnum.qzz.io"
-LIVE_SMS_URL = "https://ivas.tempnum.qzz.io/portal/live/my_sms"  # ⚡ Live পেজ
+LIVE_SMS_URL = "https://ivas.tempnum.qzz.io/portal/live/my_sms"
+SOCKET_SERVER = "https://ivasms.com:2087"  # ⚡ Socket.IO server
 
 USERNAME = "sagorsakh8@gmail.com"
 PASSWORD = "61453812Sa@"
 
-POLLING_INTERVAL_SECONDS = 7   # ⚡ প্রতি ৭ সেকেন্ডে Live পেজ চেক
 STATE_FILE = "processed_sms_ids.json"
 CHAT_IDS_FILE = "chat_ids.json"
 SESSION_FILE = "session_cookies.pkl"
@@ -66,8 +67,7 @@ COUNTRY_CODES = {
     '261': ('Madagascar', '🇲🇬'), '263': ('Zimbabwe', '🇿🇼'), '264': ('Namibia', '🇳🇦'),
     '265': ('Malawi', '🇲🇼'), '266': ('Lesotho', '🇱🇸'), '267': ('Botswana', '🇧🇼'),
     '268': ('Eswatini', '🇸🇿'), '269': ('Comoros', '🇰🇲'), '27': ('South Africa', '🇿🇦'),
-    '291': ('Eritrea', '🇪🇷'), '297': ('Aruba', '🇦🇼'), '298': ('Faroe Islands', '🇫🇴'),
-    '299': ('Greenland', '🇬🇱'), '30': ('Greece', '🇬🇷'), '31': ('Netherlands', '🇳🇱'),
+    '291': ('Eritrea', '🇪🇷'), '30': ('Greece', '🇬🇷'), '31': ('Netherlands', '🇳🇱'),
     '32': ('Belgium', '🇧🇪'), '33': ('France', '🇫🇷'), '34': ('Spain', '🇪🇸'),
     '350': ('Gibraltar', '🇬🇮'), '351': ('Portugal', '🇵🇹'), '352': ('Luxembourg', '🇱🇺'),
     '353': ('Ireland', '🇮🇪'), '354': ('Iceland', '🇮🇸'), '355': ('Albania', '🇦🇱'),
@@ -83,22 +83,19 @@ COUNTRY_CODES = {
     '423': ('Liechtenstein', '🇱🇮'), '43': ('Austria', '🇦🇹'), '44': ('United Kingdom', '🇬🇧'),
     '45': ('Denmark', '🇩🇰'), '46': ('Sweden', '🇸🇪'), '47': ('Norway', '🇳🇴'),
     '48': ('Poland', '🇵🇱'), '49': ('Germany', '🇩🇪'),
-    '1': ('USA/Canada', '🇺🇸'), '1242': ('Bahamas', '🇧🇸'), '1246': ('Barbados', '🇧🇧'),
-    '1264': ('Anguilla', '🇦🇮'), '1268': ('Antigua and Barbuda', '🇦🇬'),
+    '1': ('USA/Canada', '🇺🇸'), '52': ('Mexico', '🇲🇽'), '53': ('Cuba', '🇨🇺'),
+    '54': ('Argentina', '🇦🇷'), '55': ('Brazil', '🇧🇷'), '56': ('Chile', '🇨🇱'),
+    '57': ('Colombia', '🇨🇴'), '58': ('Venezuela', '🇻🇪'), '591': ('Bolivia', '🇧🇴'),
+    '592': ('Guyana', '🇬🇾'), '593': ('Ecuador', '🇪🇨'), '595': ('Paraguay', '🇵🇾'),
+    '597': ('Suriname', '🇸🇷'), '598': ('Uruguay', '🇺🇾'), '501': ('Belize', '🇧🇿'),
+    '502': ('Guatemala', '🇬🇹'), '503': ('El Salvador', '🇸🇻'), '504': ('Honduras', '🇭🇳'),
+    '505': ('Nicaragua', '🇳🇮'), '506': ('Costa Rica', '🇨🇷'), '507': ('Panama', '🇵🇦'),
+    '509': ('Haiti', '🇭🇹'), '1242': ('Bahamas', '🇧🇸'), '1246': ('Barbados', '🇧🇧'),
     '1345': ('Cayman Islands', '🇰🇾'), '1441': ('Bermuda', '🇧🇲'),
-    '1473': ('Grenada', '🇬🇩'), '1649': ('Turks and Caicos', '🇹🇨'),
-    '1664': ('Montserrat', '🇲🇸'), '1671': ('Guam', '🇬🇺'),
-    '1758': ('Saint Lucia', '🇱🇨'), '1767': ('Dominica', '🇩🇲'),
-    '1784': ('Saint Vincent', '🇻🇨'), '1787': ('Puerto Rico', '🇵🇷'),
-    '1809': ('Dominican Republic', '🇩🇴'), '1868': ('Trinidad and Tobago', '🇹🇹'),
-    '1869': ('Saint Kitts and Nevis', '🇰🇳'), '1876': ('Jamaica', '🇯🇲'),
-    '52': ('Mexico', '🇲🇽'), '53': ('Cuba', '🇨🇺'), '54': ('Argentina', '🇦🇷'),
-    '55': ('Brazil', '🇧🇷'), '56': ('Chile', '🇨🇱'), '57': ('Colombia', '🇨🇴'),
-    '58': ('Venezuela', '🇻🇪'), '591': ('Bolivia', '🇧🇴'), '592': ('Guyana', '🇬🇾'),
-    '593': ('Ecuador', '🇪🇨'), '595': ('Paraguay', '🇵🇾'), '597': ('Suriname', '🇸🇷'),
-    '598': ('Uruguay', '🇺🇾'), '501': ('Belize', '🇧🇿'), '502': ('Guatemala', '🇬🇹'),
-    '503': ('El Salvador', '🇸🇻'), '504': ('Honduras', '🇭🇳'), '505': ('Nicaragua', '🇳🇮'),
-    '506': ('Costa Rica', '🇨🇷'), '507': ('Panama', '🇵🇦'), '509': ('Haiti', '🇭🇹'),
+    '1473': ('Grenada', '🇬🇩'), '1758': ('Saint Lucia', '🇱🇨'),
+    '1767': ('Dominica', '🇩🇲'), '1784': ('Saint Vincent', '🇻🇨'),
+    '1787': ('Puerto Rico', '🇵🇷'), '1809': ('Dominican Republic', '🇩🇴'),
+    '1868': ('Trinidad and Tobago', '🇹🇹'), '1876': ('Jamaica', '🇯🇲'),
     '7': ('Russia', '🇷🇺'), '77': ('Kazakhstan', '🇰🇿'), '81': ('Japan', '🇯🇵'),
     '82': ('South Korea', '🇰🇷'), '84': ('Vietnam', '🇻🇳'), '850': ('North Korea', '🇰🇵'),
     '852': ('Hong Kong', '🇭🇰'), '853': ('Macau', '🇲🇴'), '855': ('Cambodia', '🇰🇭'),
@@ -116,68 +113,84 @@ COUNTRY_CODES = {
     '998': ('Uzbekistan', '🇺🇿'), '60': ('Malaysia', '🇲🇾'), '61': ('Australia', '🇦🇺'),
     '62': ('Indonesia', '🇮🇩'), '63': ('Philippines', '🇵🇭'), '64': ('New Zealand', '🇳🇿'),
     '65': ('Singapore', '🇸🇬'), '66': ('Thailand', '🇹🇭'), '670': ('East Timor', '🇹🇱'),
-    '673': ('Brunei', '🇧🇳'), '675': ('Papua New Guinea', '🇵🇬'), '676': ('Tonga', '🇹🇴'),
-    '677': ('Solomon Islands', '🇸🇧'), '678': ('Vanuatu', '🇻🇺'), '679': ('Fiji', '🇫🇯'),
-    '685': ('Samoa', '🇼🇸'), '686': ('Kiribati', '🇰🇮'), '688': ('Tuvalu', '🇹🇻'),
-    '689': ('French Polynesia', '🇵🇫'), '691': ('Micronesia', '🇫🇲'),
-    '692': ('Marshall Islands', '🇲🇭'),
+    '673': ('Brunei', '🇧🇳'), '675': ('Papua New Guinea', '🇵🇬'), '679': ('Fiji', '🇫🇯'),
+    '685': ('Samoa', '🇼🇸'), '686': ('Kiribati', '🇰🇮'), '691': ('Micronesia', '🇫🇲'),
+}
+
+# দেশের ISO code থেকে পতাকা বের করা
+ISO_TO_FLAG = {
+    'af': '🇦🇫', 'al': '🇦🇱', 'dz': '🇩🇿', 'ad': '🇦🇩', 'ao': '🇦🇴', 'ag': '🇦🇬',
+    'ar': '🇦🇷', 'am': '🇦🇲', 'au': '🇦🇺', 'at': '🇦🇹', 'az': '🇦🇿', 'bs': '🇧🇸',
+    'bh': '🇧🇭', 'bd': '🇧🇩', 'bb': '🇧🇧', 'by': '🇧🇾', 'be': '🇧🇪', 'bz': '🇧🇿',
+    'bj': '🇧🇯', 'bt': '🇧🇹', 'bo': '🇧🇴', 'ba': '🇧🇦', 'bw': '🇧🇼', 'br': '🇧🇷',
+    'bn': '🇧🇳', 'bg': '🇧🇬', 'bf': '🇧🇫', 'bi': '🇧🇮', 'cv': '🇨🇻', 'kh': '🇰🇭',
+    'cm': '🇨🇲', 'ca': '🇨🇦', 'cf': '🇨🇫', 'td': '🇹🇩', 'cl': '🇨🇱', 'cn': '🇨🇳',
+    'co': '🇨🇴', 'km': '🇰🇲', 'cg': '🇨🇬', 'cd': '🇨🇩', 'cr': '🇨🇷', 'ci': '🇨🇮',
+    'hr': '🇭🇷', 'cu': '🇨🇺', 'cy': '🇨🇾', 'cz': '🇨🇿', 'dk': '🇩🇰', 'dj': '🇩🇯',
+    'dm': '🇩🇲', 'do': '🇩🇴', 'ec': '🇪🇨', 'eg': '🇪🇬', 'sv': '🇸🇻', 'gq': '🇬🇶',
+    'er': '🇪🇷', 'ee': '🇪🇪', 'sz': '🇸🇿', 'et': '🇪🇹', 'fj': '🇫🇯', 'fi': '🇫🇮',
+    'fr': '🇫🇷', 'ga': '🇬🇦', 'gm': '🇬🇲', 'ge': '🇬🇪', 'de': '🇩🇪', 'gh': '🇬🇭',
+    'gr': '🇬🇷', 'gd': '🇬🇩', 'gt': '🇬🇹', 'gn': '🇬🇳', 'gw': '🇬🇼', 'gy': '🇬🇾',
+    'ht': '🇭🇹', 'hn': '🇭🇳', 'hk': '🇭🇰', 'hu': '🇭🇺', 'is': '🇮🇸', 'in': '🇮🇳',
+    'id': '🇮🇩', 'ir': '🇮🇷', 'iq': '🇮🇶', 'ie': '🇮🇪', 'il': '🇮🇱', 'it': '🇮🇹',
+    'jm': '🇯🇲', 'jp': '🇯🇵', 'jo': '🇯🇴', 'kz': '🇰🇿', 'ke': '🇰🇪', 'ki': '🇰🇮',
+    'kp': '🇰🇵', 'kr': '🇰🇷', 'kw': '🇰🇼', 'kg': '🇰🇬', 'la': '🇱🇦', 'lv': '🇱🇻',
+    'lb': '🇱🇧', 'ls': '🇱🇸', 'lr': '🇱🇷', 'ly': '🇱🇾', 'li': '🇱🇮', 'lt': '🇱🇹',
+    'lu': '🇱🇺', 'mo': '🇲🇴', 'mg': '🇲🇬', 'mw': '🇲🇼', 'my': '🇲🇾', 'mv': '🇲🇻',
+    'ml': '🇲🇱', 'mt': '🇲🇹', 'mh': '🇲🇭', 'mr': '🇲🇷', 'mu': '🇲🇺', 'mx': '🇲🇽',
+    'fm': '🇫🇲', 'md': '🇲🇩', 'mc': '🇲🇨', 'mn': '🇲🇳', 'me': '🇲🇪', 'ma': '🇲🇦',
+    'mz': '🇲🇿', 'mm': '🇲🇲', 'na': '🇳🇦', 'nr': '🇳🇷', 'np': '🇳🇵', 'nl': '🇳🇱',
+    'nz': '🇳🇿', 'ni': '🇳🇮', 'ne': '🇳🇪', 'ng': '🇳🇬', 'mk': '🇲🇰', 'no': '🇳🇴',
+    'om': '🇴🇲', 'pk': '🇵🇰', 'pw': '🇵🇼', 'pa': '🇵🇦', 'pg': '🇵🇬', 'py': '🇵🇾',
+    'pe': '🇵🇪', 'ph': '🇵🇭', 'pl': '🇵🇱', 'pt': '🇵🇹', 'qa': '🇶🇦', 'ro': '🇷🇴',
+    'ru': '🇷🇺', 'rw': '🇷🇼', 'kn': '🇰🇳', 'lc': '🇱🇨', 'vc': '🇻🇨', 'ws': '🇼🇸',
+    'sm': '🇸🇲', 'st': '🇸🇹', 'sa': '🇸🇦', 'sn': '🇸🇳', 'rs': '🇷🇸', 'sc': '🇸🇨',
+    'sl': '🇸🇱', 'sg': '🇸🇬', 'sk': '🇸🇰', 'si': '🇸🇮', 'sb': '🇸🇧', 'so': '🇸🇴',
+    'za': '🇿🇦', 'ss': '🇸🇸', 'es': '🇪🇸', 'lk': '🇱🇰', 'sd': '🇸🇩', 'sr': '🇸🇷',
+    'se': '🇸🇪', 'ch': '🇨🇭', 'sy': '🇸🇾', 'tw': '🇹🇼', 'tj': '🇹🇯', 'tz': '🇹🇿',
+    'th': '🇹🇭', 'tl': '🇹🇱', 'tg': '🇹🇬', 'to': '🇹🇴', 'tt': '🇹🇹', 'tn': '🇹🇳',
+    'tr': '🇹🇷', 'tm': '🇹🇲', 'tv': '🇹🇻', 'ug': '🇺🇬', 'ua': '🇺🇦', 'ae': '🇦🇪',
+    'gb': '🇬🇧', 'us': '🇺🇸', 'uy': '🇺🇾', 'uz': '🇺🇿', 'vu': '🇻🇺', 've': '🇻🇪',
+    'vn': '🇻🇳', 'ye': '🇾🇪', 'zm': '🇿🇲', 'zw': '🇿🇼', 'ps': '🇵🇸', 'xk': '🇽🇰',
 }
 
 SERVICE_KEYWORDS = {
-    "WhatsApp": ["whatsapp", "واتساب", "واتس اب", "হোয়াটসঅ্যাপ", "व्हाट्सएप", "вотсап"],
-    "Telegram": ["telegram", "تيليجرام", "تلغرام", "টেলিগ্রাম", "टेलीग्राम", "телеграм"],
-    "Facebook": ["facebook", "فيسبوك", "ফেসবুক", "फेसबुक"],
-    "Google": ["google", "gmail", "جوجل", "গুগল", "गूगल"],
-    "Instagram": ["instagram", "انستقرام", "انستجرام", "ইনস্টাগ্রাম", "इंस्टाग्राम"],
-    "Twitter": ["twitter", "تويتر", "টুইটার", "ट्विटर"],
-    "X": ["x", "إكس"],
-    "Messenger": ["messenger", "meta", "ماسنجر", "مسنجر", "মেসেঞ্জার"],
-    "TikTok": ["tiktok", "تيك توك", "টিকটক", "टिकटॉक"],
-    "Snapchat": ["snapchat", "سناب شات", "سناب", "স্ন্যাপচ্যাট"],
+    "WhatsApp": ["whatsapp", "واتساب", "হোয়াটসঅ্যাপ"],
+    "Telegram": ["telegram", "تيليجرام", "টেলিগ্রাম"],
+    "Facebook": ["facebook", "فيسبوك", "ফেসবুক"],
+    "Google": ["google", "gmail", "গুগল"],
+    "Instagram": ["instagram", "انستقرام", "ইনস্টাগ্রাম"],
+    "Twitter": ["twitter", "تويتر", "টুইটার"],
+    "TikTok": ["tiktok", "تيك توك", "টিকটক"],
+    "Snapchat": ["snapchat", "سناب شات"],
     "Amazon": ["amazon"], "Netflix": ["netflix"], "LinkedIn": ["linkedin"],
-    "Microsoft": ["microsoft", "outlook", "live.com"], "Apple": ["apple", "icloud"],
-    "Discord": ["discord"], "Signal": ["signal"], "Viber": ["viber"], "IMO": ["imo"],
-    "PayPal": ["paypal"], "Binance": ["binance"], "Uber": ["uber"], "Bolt": ["bolt"],
-    "Airbnb": ["airbnb"], "Yahoo": ["yahoo"], "Steam": ["steam"], "Blizzard": ["blizzard"],
-    "Foodpanda": ["foodpanda"], "Pathao": ["pathao"], "Gmail": ["gmail"],
-    "YouTube": ["youtube"], "eBay": ["ebay"], "AliExpress": ["aliexpress"],
-    "Alibaba": ["alibaba"], "Flipkart": ["flipkart"], "Outlook": ["outlook"],
-    "Skype": ["skype"], "Spotify": ["spotify"], "iCloud": ["icloud"], "Stripe": ["stripe"],
-    "Cash App": ["cash app", "square cash"], "Venmo": ["venmo"], "Zelle": ["zelle"],
-    "Wise": ["wise", "transferwise"], "Coinbase": ["coinbase"], "KuCoin": ["kucoin"],
-    "Bybit": ["bybit"], "OKX": ["okx"], "Huobi": ["huobi"], "Kraken": ["kraken"],
-    "MetaMask": ["metamask"], "Epic Games": ["epic games", "epicgames"],
-    "PlayStation": ["playstation", "psn"], "Xbox": ["xbox"], "Twitch": ["twitch"],
-    "Reddit": ["reddit"], "ProtonMail": ["protonmail", "proton"], "Zoho": ["zoho"],
-    "Quora": ["quora"], "StackOverflow": ["stackoverflow"], "Indeed": ["indeed"],
-    "Upwork": ["upwork"], "Fiverr": ["fiverr"], "Glassdoor": ["glassdoor"],
-    "Booking.com": ["booking.com", "booking"], "Careem": ["careem"], "Swiggy": ["swiggy"],
-    "Zomato": ["zomato"], "McDonald's": ["mcdonalds", "mcdonald's"], "KFC": ["kfc"],
-    "Nike": ["nike"], "Adidas": ["adidas"], "Shein": ["shein"], "OnlyFans": ["onlyfans"],
-    "Tinder": ["tinder"], "Bumble": ["bumble"], "Grindr": ["grindr"], "Line": ["line"],
-    "WeChat": ["wechat"], "VK": ["vk", "vkontakte"], "Unknown": ["unknown"]
+    "Microsoft": ["microsoft", "outlook"], "Apple": ["apple", "icloud"],
+    "Discord": ["discord"], "Signal": ["signal"], "Viber": ["viber"],
+    "PayPal": ["paypal"], "Binance": ["binance"], "Uber": ["uber"],
+    "Spotify": ["spotify"], "Stripe": ["stripe"], "Coinbase": ["coinbase"],
+    "KuCoin": ["kucoin"], "Bybit": ["bybit"], "OKX": ["okx"],
+    "Steam": ["steam"], "Epic Games": ["epicgames", "epic games"],
+    "PlayStation": ["playstation"], "Xbox": ["xbox"], "Reddit": ["reddit"],
+    "Tinder": ["tinder"], "Bumble": ["bumble"], "Line": ["line"],
+    "WeChat": ["wechat"], "VK": ["vkontakte", " vk "],
 }
 
 SERVICE_EMOJIS = {
-    "Telegram": "📩", "WhatsApp": "🟢", "Facebook": "📘", "Instagram": "📸", "Messenger": "💬",
-    "Google": "🔍", "Gmail": "✉️", "YouTube": "▶️", "Twitter": "🐦", "X": "❌",
-    "TikTok": "🎵", "Snapchat": "👻", "Amazon": "🛒", "eBay": "📦", "AliExpress": "📦",
-    "Alibaba": "🏭", "Flipkart": "📦", "Microsoft": "🪟", "Outlook": "📧", "Skype": "📞",
-    "Netflix": "🎬", "Spotify": "🎶", "Apple": "🍏", "iCloud": "☁️", "PayPal": "💰",
-    "Stripe": "💳", "Cash App": "💵", "Venmo": "💸", "Zelle": "🏦", "Wise": "🌐",
-    "Binance": "🪙", "Coinbase": "🪙", "KuCoin": "🪙", "Bybit": "📈", "OKX": "🟠",
-    "Huobi": "🔥", "Kraken": "🐙", "MetaMask": "🦊", "Discord": "🗨️", "Steam": "🎮",
-    "Epic Games": "🕹️", "PlayStation": "🎮", "Xbox": "🎮", "Twitch": "📺", "Reddit": "👽",
-    "Yahoo": "🟣", "ProtonMail": "🔐", "Zoho": "📬", "Quora": "❓", "StackOverflow": "🧑‍💻",
-    "LinkedIn": "💼", "Indeed": "📋", "Upwork": "🧑‍💻", "Fiverr": "💻", "Glassdoor": "🔎",
-    "Airbnb": "🏠", "Booking.com": "🛏️", "Uber": "🚗", "Lyft": "🚕", "Bolt": "🚖",
-    "Careem": "🚗", "Swiggy": "🍔", "Zomato": "🍽️", "Foodpanda": "🍱",
-    "McDonald's": "🍟", "KFC": "🍗", "Nike": "👟", "Adidas": "👟", "Shein": "👗",
-    "OnlyFans": "🔞", "Tinder": "🔥", "Bumble": "🐝", "Grindr": "😈", "Signal": "🔐",
-    "Viber": "📞", "Line": "💬", "WeChat": "💬", "VK": "🌐", "Unknown": "❓"
+    "Telegram": "📩", "WhatsApp": "🟢", "Facebook": "📘", "Instagram": "📸",
+    "Google": "🔍", "Gmail": "✉️", "YouTube": "▶️", "Twitter": "🐦",
+    "TikTok": "🎵", "Snapchat": "👻", "Amazon": "🛒", "Microsoft": "🪟",
+    "Netflix": "🎬", "Spotify": "🎶", "Apple": "🍏", "PayPal": "💰",
+    "Binance": "🪙", "Coinbase": "🪙", "Discord": "🗨️", "Steam": "🎮",
+    "LinkedIn": "💼", "Uber": "🚗", "Tinder": "🔥", "Signal": "🔐",
+    "Viber": "📞", "Reddit": "👽", "Unknown": "❓"
 }
 
 # --- Helper Functions ---
+def get_flag_from_iso(iso_code):
+    if not iso_code:
+        return "🏴‍☠️"
+    return ISO_TO_FLAG.get(iso_code.lower(), "🏴‍☠️")
+
 def parse_country_from_number(phone_number):
     clean_num = phone_number.lstrip("+0")
     for length in [4, 3, 2, 1]:
@@ -186,10 +199,12 @@ def parse_country_from_number(phone_number):
             return COUNTRY_CODES[prefix]
     return ("Unknown", "🏴‍☠️")
 
-def parse_service_from_sms(sms_text):
-    lower_sms_text = sms_text.lower()
+def parse_service_from_text(text):
+    if not text:
+        return "Unknown"
+    lower_text = text.lower()
     for service_name, keywords in SERVICE_KEYWORDS.items():
-        if any(keyword in lower_sms_text for keyword in keywords):
+        if any(keyword in lower_text for keyword in keywords):
             return service_name
     return "Unknown"
 
@@ -232,7 +247,7 @@ def save_session(cookies):
     try:
         cookie_list = [(c.name, c.value, c.domain, c.path) for c in cookies.jar]
         with open(SESSION_FILE, 'wb') as f:
-            pickle.dump(cookie_list, f)
+            import pickle; pickle.dump(cookie_list, f)
         print("💾 Session saved!")
     except Exception as e:
         print(f"⚠️ Failed to save session: {e}")
@@ -240,6 +255,7 @@ def save_session(cookies):
 def load_session():
     if not os.path.exists(SESSION_FILE): return None
     try:
+        import pickle
         with open(SESSION_FILE, 'rb') as f:
             cookie_list = pickle.load(f)
         return {name: value for name, value, domain, path in cookie_list}
@@ -250,129 +266,16 @@ def clear_session():
         os.remove(SESSION_FILE)
         print("🗑️ Session cleared!")
 
-# --- Login Function ---
-async def do_login(client, headers):
-    """Login করে CSRF token নেওয়া"""
-    try:
-        print("ℹ️ Logging in...")
-        login_page_res = await client.get(LOGIN_URL, headers=headers)
-        soup = BeautifulSoup(login_page_res.text, 'html.parser')
-        token_input = soup.find('input', {'name': '_token'})
-        login_data = {'email': USERNAME, 'password': PASSWORD}
-        if token_input:
-            login_data['_token'] = token_input['value']
-
-        login_res = await client.post(LOGIN_URL, data=login_data, headers=headers)
-
-        if "login" in str(login_res.url):
-            print("❌ Login failed!")
-            return False
-
-        print("✅ Login successful!")
-        save_session(client.cookies)
-        return True
-    except Exception as e:
-        print(f"❌ Login error: {e}")
-        return False
-
-# ⚡ LIVE SMS FETCH — মূল ফাংশন
-async def fetch_live_sms(client: httpx.AsyncClient, headers: dict):
-    """
-    Live SMS পেজ থেকে সরাসরি সব OTP আনে।
-    আগের মতো ৫০০০ নম্বর check করতে হয় না।
-    মাত্র ১টা request = অনেক দ্রুত!
-    """
-    try:
-        response = await client.get(LIVE_SMS_URL, headers=headers)
-
-        # Session expire হলে login করো
-        if "login" in str(response.url):
-            print("⚠️ Session expired, re-logging in...")
-            clear_session()
-            return None  # None মানে re-login দরকার
-
-        soup = BeautifulSoup(response.text, 'html.parser')
-        messages = []
-
-
-        # ছবিতে দেখা table structure:
-        # কলাম ১: পতাকা + দেশ (SLOVENIA 359) + নম্বর (38671428269) আলাদা লাইনে
-        # কলাম ২: Service (WhatsApp/Telegram etc)
-        # কলাম ৩: Paid
-        # কলাম ৪: Limit
-        # কলাম ৫: Message content
-        table_rows = soup.select('table tbody tr')
-        print(f"   📋 Found {len(table_rows)} rows in Live SMS table")
-
-        for row in table_rows:
-            try:
-                cells = row.find_all('td')
-                if len(cells) < 3:
-                    continue
-
-                # কলাম ১ থেকে নম্বর বের করা
-                cell0_lines = cells[0].get_text(separator='\n', strip=True).split('\n')
-                cell0_lines = [l.strip() for l in cell0_lines if l.strip()]
-
-                phone_number = None
-                for line in cell0_lines:
-                    if re.match(r'^\+?\d{7,15}$', line.replace(' ', '')):
-                        phone_number = line.replace('+', '').strip()
-                        break
-
-                if not phone_number:
-                    cell0_full = cells[0].get_text(separator=' ', strip=True)
-                    nm = re.search(r'\b(\d{7,15})\b', cell0_full)
-                    if nm:
-                        phone_number = nm.group(1)
-
-                if not phone_number:
-                    continue
-
-                # কলাম ২ থেকে Service নেওয়া
-                sid_text = cells[1].get_text(strip=True).strip() if len(cells) > 1 else ""
-
-                # শেষ কলাম থেকে SMS content
-                sms_text = cells[-1].get_text(separator=' ', strip=True)
-                if not sms_text or len(sms_text) < 3:
-                    continue
-
-                print(f"   📱 {phone_number} | {sid_text} | {sms_text[:40]}...")
-
-                date_str = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
-                country_name, flag = parse_country_from_number(phone_number)
-                service = sid_text if sid_text else parse_service_from_sms(sms_text)
-                code = parse_code_from_sms(sms_text)
-                unique_id = f"{phone_number}-{sms_text}"
-
-                messages.append({
-                    "id": unique_id, "time": date_str, "number": phone_number,
-                    "country": country_name, "flag": flag, "service": service,
-                    "code": code, "full_sms": sms_text
-                })
-            except Exception as e:
-                print(f"⚠️ Row error: {e}")
-                continue
-        return messages
-
-    except httpx.RequestError as e:
-        print(f"❌ Network error: {e}")
-        return []
-    except Exception as e:
-        print(f"❌ Error fetching live SMS: {e}")
-        traceback.print_exc()
-        return []
-
 # --- Telegram Message Sender ---
-async def send_telegram_message(context: ContextTypes.DEFAULT_TYPE, chat_id: str, message_data: dict):
+async def send_telegram_message(bot, chat_id: str, message_data: dict):
     try:
-        time_str = message_data.get("time", "N/A")
         number_str = message_data.get("number", "N/A")
         country_name = message_data.get("country", "N/A")
         flag_emoji = message_data.get("flag", "🏴‍☠️")
-        service_name = message_data.get("service", "N/A")
+        service_name = message_data.get("service", "Unknown")
         code_str = message_data.get("code", "N/A")
         full_sms_text = message_data.get("full_sms", "N/A")
+        time_str = message_data.get("time", "N/A")
         service_emoji = SERVICE_EMOJIS.get(service_name, "❓")
 
         full_message = (
@@ -393,7 +296,7 @@ async def send_telegram_message(context: ContextTypes.DEFAULT_TYPE, chat_id: str
         ]]
         reply_markup = InlineKeyboardMarkup(keyboard)
 
-        await context.bot.send_message(
+        await bot.send_message(
             chat_id=chat_id,
             text=full_message,
             parse_mode='MarkdownV2',
@@ -402,24 +305,82 @@ async def send_telegram_message(context: ContextTypes.DEFAULT_TYPE, chat_id: str
     except Exception as e:
         print(f"❌ Error sending to {chat_id}: {e}")
 
+# --- Get Socket Token from Live Page ---
+async def get_socket_credentials():
+    """Login করে Live পেজ থেকে Socket token ও user নেওয়া"""
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+    }
+    saved_cookies = load_session()
+
+    async with httpx.AsyncClient(timeout=120.0, follow_redirects=True, cookies=saved_cookies) as client:
+        try:
+            # Session check অথবা login
+            if not saved_cookies:
+                print("ℹ️ Logging in...")
+                login_page = await client.get(LOGIN_URL, headers=headers)
+                soup = BeautifulSoup(login_page.text, 'html.parser')
+                token_input = soup.find('input', {'name': '_token'})
+                login_data = {'email': USERNAME, 'password': PASSWORD}
+                if token_input:
+                    login_data['_token'] = token_input['value']
+                login_res = await client.post(LOGIN_URL, data=login_data, headers=headers)
+                if "login" in str(login_res.url):
+                    print("❌ Login failed!")
+                    return None
+                print("✅ Login successful!")
+                save_session(client.cookies)
+            else:
+                print("🔓 Using saved session...")
+
+            # Live পেজ থেকে token ও user নেওয়া
+            live_page = await client.get(LIVE_SMS_URL, headers=headers)
+            if "login" in str(live_page.url):
+                print("⚠️ Session expired, re-logging in...")
+                clear_session()
+                return await get_socket_credentials()
+
+            html = live_page.text
+
+            # Token বের করা
+            token_match = re.search(r"token:\s*['\"]([^'\"]+)['\"]", html)
+            user_match = re.search(r"user:['\"]([a-f0-9]{32})['\"]", html)
+            event_match = re.search(r'window\.liveSMSSocket\.on\(["\']([^"\']+)["\']', html)
+
+            if not token_match or not user_match:
+                print("❌ Could not find socket credentials in page!")
+                return None
+
+            creds = {
+                'token': token_match.group(1),
+                'user': user_match.group(1),
+                'event': event_match.group(1) if event_match else None
+            }
+            print(f"✅ Socket credentials obtained!")
+            print(f"   User: {creds['user'][:10]}...")
+            return creds
+
+        except Exception as e:
+            print(f"❌ Error getting credentials: {e}")
+            traceback.print_exc()
+            return None
+
 # --- Command Handlers ---
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.message.from_user.id
     if str(user_id) in ADMIN_CHAT_IDS:
         await update.message.reply_text(
             "Welcome Admin!\n"
-            "You can use the following commands:\n"
-            "/add_chat <chat_id> - Add a new chat ID\n"
-            "/remove_chat <chat_id> - Remove a chat ID\n"
-            "/list_chats - List all chat IDs"
+            "/add_chat <chat_id> - Add chat\n"
+            "/remove_chat <chat_id> - Remove chat\n"
+            "/list_chats - List chats"
         )
     else:
-        await update.message.reply_text("Sorry, you are not authorized to use this bot.")
+        await update.message.reply_text("Sorry, not authorized.")
 
 async def add_chat_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.message.from_user.id
-    if str(user_id) not in ADMIN_CHAT_IDS:
-        await update.message.reply_text("Sorry, only admins can use this command.")
+    if str(update.message.from_user.id) not in ADMIN_CHAT_IDS:
+        await update.message.reply_text("Sorry, only admins.")
         return
     try:
         new_chat_id = context.args[0]
@@ -427,16 +388,15 @@ async def add_chat_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if new_chat_id not in chat_ids:
             chat_ids.append(new_chat_id)
             save_chat_ids(chat_ids)
-            await update.message.reply_text(f"✅ Chat ID {new_chat_id} successfully added.")
+            await update.message.reply_text(f"✅ Added: {new_chat_id}")
         else:
-            await update.message.reply_text(f"⚠️ This chat ID ({new_chat_id}) is already in the list.")
-    except (IndexError, ValueError):
-        await update.message.reply_text("❌ Invalid format. Use: /add_chat <chat_id>")
+            await update.message.reply_text(f"⚠️ Already exists: {new_chat_id}")
+    except:
+        await update.message.reply_text("❌ Use: /add_chat <chat_id>")
 
 async def remove_chat_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.message.from_user.id
-    if str(user_id) not in ADMIN_CHAT_IDS:
-        await update.message.reply_text("Sorry, only admins can use this command.")
+    if str(update.message.from_user.id) not in ADMIN_CHAT_IDS:
+        await update.message.reply_text("Sorry, only admins.")
         return
     try:
         chat_id_to_remove = context.args[0]
@@ -444,87 +404,159 @@ async def remove_chat_command(update: Update, context: ContextTypes.DEFAULT_TYPE
         if chat_id_to_remove in chat_ids:
             chat_ids.remove(chat_id_to_remove)
             save_chat_ids(chat_ids)
-            await update.message.reply_text(f"✅ Chat ID {chat_id_to_remove} successfully removed.")
+            await update.message.reply_text(f"✅ Removed: {chat_id_to_remove}")
         else:
-            await update.message.reply_text(f"🤔 Chat ID ({chat_id_to_remove}) not found.")
-    except (IndexError, ValueError):
-        await update.message.reply_text("❌ Invalid format. Use: /remove_chat <chat_id>")
+            await update.message.reply_text(f"🤔 Not found: {chat_id_to_remove}")
+    except:
+        await update.message.reply_text("❌ Use: /remove_chat <chat_id>")
 
 async def list_chats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.message.from_user.id
-    if str(user_id) not in ADMIN_CHAT_IDS:
-        await update.message.reply_text("Sorry, only admins can use this command.")
+    if str(update.message.from_user.id) not in ADMIN_CHAT_IDS:
+        await update.message.reply_text("Sorry, only admins.")
         return
     chat_ids = load_chat_ids()
     if chat_ids:
-        message = "📜 Currently registered chat IDs are:\n"
-        for cid in chat_ids:
-            message += f"- `{escape_markdown(str(cid))}`\n"
-        try:
-            await update.message.reply_text(message, parse_mode='MarkdownV2')
-        except:
-            await update.message.reply_text("📜 Chat IDs:\n" + "\n".join(map(str, chat_ids)))
+        await update.message.reply_text("📜 Chat IDs:\n" + "\n".join(chat_ids))
     else:
-        await update.message.reply_text("No chat IDs registered.")
+        await update.message.reply_text("No chat IDs.")
 
-# --- Main Job ---
-async def check_sms_job(context: ContextTypes.DEFAULT_TYPE):
-    print(f"\n⚡ [{datetime.now(timezone.utc).strftime('%H:%M:%S')}] Checking Live SMS...")
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-    }
-
-    saved_cookies = load_session()
-
-    async with httpx.AsyncClient(timeout=120.0, follow_redirects=True, cookies=saved_cookies) as client:
+# ⚡ SOCKET.IO BOT — মূল ফাংশন
+async def run_socket_bot(bot):
+    """
+    Socket.IO দিয়ে সরাসরি iVAS সার্ভারের সাথে connect করে।
+    OTP আসার সাথে সাথে instant Telegram-এ পাঠায়।
+    কোনো polling নেই — push notification!
+    """
+    while True:
         try:
-            # Session না থাকলে login করো
-            if not saved_cookies:
-                success = await do_login(client, headers)
-                if not success:
-                    return
+            print("🔑 Getting socket credentials...")
+            creds = await get_socket_credentials()
 
-            # ⚡ Live SMS পেজ থেকে সরাসরি OTP আনো
-            messages = await fetch_live_sms(client, headers)
+            if not creds:
+                print("⚠️ Failed to get credentials. Retrying in 30s...")
+                await asyncio.sleep(30)
+                continue
 
-            # None মানে session expire — re-login করো
-            if messages is None:
-                clear_session()
-                success = await do_login(client, headers)
-                if not success:
-                    return
-                messages = await fetch_live_sms(client, headers) or []
+            token = creds['token']
+            user = creds['user']
+            event_name = creds['event']
 
-            if not messages:
-                print("✔️ No new messages.")
-                return
+            print(f"⚡ Connecting to Socket.IO server: {SOCKET_SERVER}/livesms")
 
-            processed_ids = load_processed_ids()
-            chat_ids_to_send = load_chat_ids()
-            new_count = 0
+            # Socket.IO client তৈরি
+            sio = socketio.AsyncClient(
+                ssl_verify=False,
+                reconnection=True,
+                reconnection_attempts=5,
+                reconnection_delay=3,
+            )
 
-            for msg in messages:
-                if msg["id"] not in processed_ids:
-                    new_count += 1
-                    print(f"✅ New OTP from: {msg['number']} | {msg['service']}")
-                    for chat_id in chat_ids_to_send:
-                        await send_telegram_message(context, chat_id, msg)
-                    save_processed_id(msg["id"])
+            # ⚡ OTP আসলে এই function call হবে
+            async def on_sms_received(data):
+                try:
+                    print(f"\n🔔 NEW OTP RECEIVED!")
+                    print(f"   Data: {data}")
 
-            if new_count > 0:
-                print(f"📨 Sent {new_count} new OTP(s) to Telegram!")
+                    phone_number = str(data.get('recipient', '')).replace('+', '').strip()
+                    sms_text = str(data.get('message', ''))
+                    originator = str(data.get('originator', '')).replace('+', '').strip()
+                    range_name = str(data.get('range', ''))
+                    country_iso = str(data.get('country_iso', ''))
+
+                    if not phone_number or not sms_text:
+                        return
+
+                    unique_id = f"{phone_number}-{sms_text}"
+                    processed_ids = load_processed_ids()
+
+                    if unique_id in processed_ids:
+                        print(f"   ⏭️ Already sent, skipping.")
+                        return
+
+                    # দেশ ও পতাকা বের করা
+                    flag = get_flag_from_iso(country_iso)
+                    country_name, phone_flag = parse_country_from_number(phone_number)
+                    if flag == "🏴‍☠️":
+                        flag = phone_flag
+
+                    # Service বের করা — originator থেকে
+                    service = parse_service_from_text(originator)
+                    if service == "Unknown":
+                        service = parse_service_from_text(sms_text)
+
+                    code = parse_code_from_sms(sms_text)
+                    time_str = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
+
+                    msg_data = {
+                        "id": unique_id,
+                        "time": time_str,
+                        "number": phone_number,
+                        "country": country_name,
+                        "flag": flag,
+                        "service": service,
+                        "code": code,
+                        "full_sms": sms_text
+                    }
+
+                    print(f"   📱 {phone_number} | {service} | {sms_text[:40]}...")
+
+                    chat_ids = load_chat_ids()
+                    for chat_id in chat_ids:
+                        await send_telegram_message(bot, chat_id, msg_data)
+
+                    save_processed_id(unique_id)
+                    print(f"   ✅ Sent to {len(chat_ids)} chat(s)!")
+
+                except Exception as e:
+                    print(f"❌ Error processing SMS: {e}")
+                    traceback.print_exc()
+
+            @sio.event
+            async def connect():
+                print("✅ Connected to Socket.IO server!")
+
+            @sio.event
+            async def disconnect():
+                print("⚠️ Disconnected from Socket.IO server!")
+
+            @sio.event
+            async def connect_error(data):
+                print(f"❌ Connection error: {data}")
+
+            # Event listener যোগ করা
+            if event_name:
+                sio.on(event_name, on_sms_received)
+                print(f"👂 Listening to event: {event_name[:20]}...")
+            else:
+                # সব event শোনা
+                @sio.on('*')
+                async def catch_all(event, data):
+                    print(f"📨 Event received: {event}")
+                    await on_sms_received(data)
+
+            # সার্ভারে connect করা
+            await sio.connect(
+                f"{SOCKET_SERVER}/livesms",
+                auth={'token': token, 'user': user},
+                transports=['websocket'],
+                wait_timeout=30
+            )
+
+            print("🎯 Socket.IO bot is LIVE! Waiting for OTPs...")
+            await sio.wait()
 
         except Exception as e:
-            print(f"❌ Error: {e}")
+            print(f"❌ Socket error: {e}")
             traceback.print_exc()
+            print("🔄 Reconnecting in 15 seconds...")
+            await asyncio.sleep(15)
             clear_session()
 
 # --- Main ---
 def main():
     keep_alive()
-    print("🚀 Bot starting...")
-    print(f"⚡ Using LIVE SMS page — checking every {POLLING_INTERVAL_SECONDS} seconds")
-    print(f"🔗 Live URL: {LIVE_SMS_URL}")
+    print("🚀 iVAS Socket.IO Bot starting...")
+    print(f"⚡ INSTANT mode — OTP arrives → Telegram in 1-2 seconds!")
 
     if not ADMIN_CHAT_IDS:
         print("🔴 WARNING: No admin IDs set!")
@@ -536,8 +568,10 @@ def main():
     application.add_handler(CommandHandler("remove_chat", remove_chat_command))
     application.add_handler(CommandHandler("list_chats", list_chats_command))
 
-    job_queue = application.job_queue
-    job_queue.run_repeating(check_sms_job, interval=POLLING_INTERVAL_SECONDS, first=1, job_kwargs={"max_instances": 1})
+    async def post_init(app):
+        asyncio.create_task(run_socket_bot(app.bot))
+
+    application.post_init = post_init
 
     print("🤖 Bot is online!")
     application.run_polling()
