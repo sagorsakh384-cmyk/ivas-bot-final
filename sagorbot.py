@@ -444,16 +444,11 @@ async def run_socket_bot(bot):
             print(f"⚡ Connecting to Socket.IO server: {SOCKET_SERVER}/livesms")
 
             # Socket.IO client তৈরি
-            import aiohttp
-            connector = aiohttp.TCPConnector(ssl=False)
-            http_session = aiohttp.ClientSession(connector=connector)
-
             sio = socketio.AsyncClient(
                 ssl_verify=False,
-                logger=True,
-                engineio_logger=True,
+                logger=False,
+                engineio_logger=False,
                 reconnection=False,
-                http_session=http_session,
             )
 
             # ⚡ OTP আসলে এই function call হবে
@@ -539,18 +534,19 @@ async def run_socket_bot(bot):
                     print(f"📨 Event received: {event}")
                     await on_sms_received(data)
 
-            # সার্ভারে connect করা — HTML-এর হুবহু format
-            # io.connect(url, { query: { token, user }, transports: [websocket] })
-            connect_url = f"{SOCKET_SERVER}/livesms?token={token}&user={user}"
+            # Port 2087 Railway block করে তাই polling দিয়ে try করছি
+            # তারপর websocket upgrade হবে
             await sio.connect(
-                connect_url,
-                transports=['websocket'],
+                SOCKET_SERVER,
+                namespaces=['/livesms'],
+                transports=['polling', 'websocket'],
                 wait_timeout=30,
                 headers={
                     'Origin': 'https://ivas.tempnum.qzz.io',
                     'Referer': 'https://ivas.tempnum.qzz.io/portal/live/my_sms',
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                }
+                },
+                auth={'token': token, 'user': user}
             )
 
             print("🎯 Socket.IO bot is LIVE! Waiting for OTPs...")
