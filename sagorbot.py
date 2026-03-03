@@ -39,7 +39,7 @@ BASE_URL = "https://ivas.tempnum.qzz.io"
 LIVE_SMS_URL = "https://ivas.tempnum.qzz.io/portal/live/my_sms"
 SOCKET_SERVER = "https://ivasms.com:2087"  # ⚡ Socket.IO server
 
-USERNAME = "sagorsakh8@gmail.com"
+USERNAME = "sagorsakh384@gmail.com"
 PASSWORD = "61453812Sa@"
 
 STATE_FILE = "processed_sms_ids.json"
