@@ -27,7 +27,7 @@ GETNUM_URL     = f"{BASE_URL}/portal/sms/received/getsms/number"
 GETSMS2_URL    = f"{BASE_URL}/portal/sms/received/getsms/number/sms"
 USERNAME       = "sagorsakh384@gmail.com"
 PASSWORD       = "61453812Sa@"
-INTERVAL       = 4
+INTERVAL       = 5
 STATE_FILE     = "processed.json"
 CHATS_FILE     = "chats.json"
 SESSION_FILE   = "session.pkl"
@@ -96,7 +96,6 @@ COUNTRY_CODES = {
     '850':('North Korea','🇰🇵'),'852':('Hong Kong','🇭🇰'),'853':('Macau','🇲🇴'),
     '855':('Cambodia','🇰🇭'),'856':('Laos','🇱🇦'),
 }
-
 SERVICE_KEYS = {
     "WhatsApp":["whatsapp","واتساب"],"Telegram":["telegram","تيليجرام"],
     "Facebook":["facebook"],"Google":["google","gmail"],
@@ -117,19 +116,16 @@ SERVICE_EMOJI = {
     "Signal":"🔐","Viber":"📞","Reddit":"👽","Unknown":"❓",
 }
 
-# ===== HELPERS =====
 def get_country(number):
     n = number.lstrip("+0")
     for l in [4,3,2,1]:
-        if n[:l] in COUNTRY_CODES:
-            return COUNTRY_CODES[n[:l]]
+        if n[:l] in COUNTRY_CODES: return COUNTRY_CODES[n[:l]]
     return ("Unknown","🏴‍☠️")
 
 def get_service(text):
     t = text.lower()
     for svc, keys in SERVICE_KEYS.items():
-        if any(k in t for k in keys):
-            return svc
+        if any(k in t for k in keys): return svc
     return "Unknown"
 
 def get_code(text):
@@ -139,7 +135,6 @@ def get_code(text):
 def esc(text):
     return re.sub(r'([\_\*\[\]\(\)\~\`\>\#\+\-\=\|\{\}\.\!])',r'\\\1',str(text))
 
-# ===== STATE =====
 def load_ids():
     try: return set(json.load(open(STATE_FILE))) if os.path.exists(STATE_FILE) else set()
     except: return set()
@@ -176,7 +171,6 @@ HEADERS = {
     'X-Requested-With':'XMLHttpRequest',
 }
 
-# ===== LOGIN =====
 async def do_login(client):
     try:
         page = await client.get(LOGIN_URL, headers=HEADERS)
@@ -186,8 +180,7 @@ async def do_login(client):
             'email':USERNAME,'password':PASSWORD,
             '_token':el['value'] if el else ''
         }, headers=HEADERS)
-        if 'login' in str(res.url):
-            print("❌ Login failed!"); return False
+        if 'login' in str(res.url): print("❌ Login failed!"); return False
         print("✅ Login success!")
         save_session(client.cookies)
         return True
@@ -203,137 +196,144 @@ async def get_csrf(client):
         return el['value'] if el else None
     except: return None
 
-# ===== ⚡ 3-STEP SMS FETCH =====
-async def fetch_all_sms(client, csrf):
-    """
-    ছবিতে দেখা ৩টা step:
-    Step 1: getsms → range list + group IDs
-    Step 2: getsms/number → number list per range
-    Step 3: getsms/number/sms → actual SMS content ⭐
-    """
-    today = datetime.now().strftime('%Y-%m-%d')
-    all_messages = []
-
+# ===== ⚡ PARALLEL: একটা নম্বরের SMS =====
+async def fetch_sms_for_number(client, today, phone, gid, csrf):
     try:
-        # ── Step 1: Range list ──
+        r = await client.post(GETSMS2_URL,
+            data={'start':today,'end':today,'Number':phone,'Range':gid,'_token':csrf},
+            headers=HEADERS, timeout=15.0)
+        soup = BeautifulSoup(r.text,'html.parser')
+        results = []
+
+        # CLI / service খোঁজা
+        cli_el = soup.find(string=re.compile(
+            r'WhatsApp|Telegram|Facebook|Google|Instagram|Signal|Viber|TikTok|Snapchat', re.I))
+
+        # card-body থেকে SMS text
+        cards = soup.find_all('div', class_='card-body')
+
+        if not cards:
+            # Fallback — full text থেকে
+            full_text = soup.get_text(separator=' ', strip=True)
+            mc_idx = full_text.find('Message Content')
+            if mc_idx > 0:
+                sms_part = full_text[mc_idx+14:mc_idx+400].strip()
+                rev_idx = sms_part.find('Rev.')
+                if rev_idx > 0: sms_part = sms_part[:rev_idx].strip()
+                if len(sms_part) > 10 and not re.match(r'^[\d\s\.\,]+$', sms_part):
+                    service = get_service((str(cli_el) if cli_el else '') + ' ' + sms_part)
+                    country, flag = get_country(phone)
+                    results.append({
+                        "id": f"{phone}-{sms_part[:60]}",
+                        "time": datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S'),
+                        "number": phone,"country": country,"flag": flag,
+                        "service": service,"code": get_code(sms_part),"full_sms": sms_part
+                    })
+            return results
+
+        for card in cards:
+            sms_el = card.find('p', class_='mb-0') or card.find('p')
+            sms_text = sms_el.get_text(separator=' ', strip=True) if sms_el else card.get_text(separator=' ', strip=True)
+            if not sms_text or len(sms_text) < 10: continue
+            if re.match(r'^[\d\s\.\,]+$', sms_text): continue
+
+            service = get_service((str(cli_el) if cli_el else '') + ' ' + sms_text)
+            country, flag = get_country(phone)
+            results.append({
+                "id": f"{phone}-{sms_text[:60]}",
+                "time": datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S'),
+                "number": phone,"country": country,"flag": flag,
+                "service": service,"code": get_code(sms_text),"full_sms": sms_text
+            })
+        return results
+    except Exception as e:
+        print(f"   ⚠️ SMS error {phone}: {e}")
+        return []
+
+# ===== ⚡ PARALLEL: একটা range-এর সব নম্বর =====
+async def fetch_numbers_for_range(client, today, gid, csrf):
+    try:
+        r = await client.post(GETNUM_URL,
+            data={'start':today,'end':today,'range':gid,'_token':csrf},
+            headers=HEADERS, timeout=15.0)
+        soup = BeautifulSoup(r.text,'html.parser')
+
+        phones = []
+        for el in soup.select("div[onclick*='getDetialsNumber']"):
+            t = el.get_text(strip=True)
+            if re.match(r'^\+?\d{7,15}$', t.replace(' ','')):
+                phones.append(re.sub(r'\D','',t))
+
+        if not phones:
+            for s in soup.stripped_strings:
+                s = s.strip()
+                if re.match(r'^\+?\d{7,15}$', s.replace(' ','')):
+                    phones.append(re.sub(r'\D','',s))
+
+        phones = list(set(phones))
+        print(f"   📱 Range {gid}: {len(phones)} numbers → fetching parallel...")
+
+        if not phones: return []
+
+        # ⚡ সব নম্বরের SMS একসাথে!
+        tasks = [fetch_sms_for_number(client, today, p, gid, csrf) for p in phones]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        all_msgs = []
+        for r in results:
+            if isinstance(r, list): all_msgs.extend(r)
+        return all_msgs
+    except Exception as e:
+        print(f"   ⚠️ Range {gid} error: {e}")
+        return []
+
+# ===== ⚡ MAIN FETCH =====
+async def fetch_all_sms(client, csrf):
+    today = datetime.now().strftime('%Y-%m-%d')
+    try:
+        # Step 1: Range list
         r1 = await client.post(GETSMS_URL,
             data={'from':today,'to':today,'_token':csrf},
-            headers=HEADERS)
+            headers=HEADERS, timeout=15.0)
         if 'login' in str(r1.url): return None
 
         soup1 = BeautifulSoup(r1.text,'html.parser')
 
-        # Range IDs বের করা — onclick="getDetials('IVORY_COAST_2856')" ধরনের
         group_ids = []
         for el in soup1.find_all(onclick=True):
             m = re.search(r"getDetials\(['\"](.+?)['\"]\)", el.get('onclick',''))
-            if m:
+            if m and m.group(1) not in group_ids:
                 group_ids.append(m.group(1))
-
         if not group_ids:
-            # Alternative: data-id attribute থেকে নেওয়া
             for el in soup1.find_all(attrs={'data-range':True}):
-                group_ids.append(el['data-range'])
-
+                if el['data-range'] not in group_ids:
+                    group_ids.append(el['data-range'])
         if not group_ids:
-            # Fallback: range name text থেকে নেওয়া
             for el in soup1.find_all(class_=lambda c: c and 'pointer' in c):
-                txt = el.get_text(strip=True)
-                if txt: group_ids.append(txt)
+                t = el.get_text(strip=True)
+                if t and t not in group_ids: group_ids.append(t)
 
-        print(f"   📦 Found {len(group_ids)} ranges: {group_ids[:3]}")
+        print(f"   📦 Found {len(group_ids)} ranges: {group_ids}")
+        if not group_ids: return []
 
-        if not group_ids:
-            print("   ⚠️ No ranges found in response")
-            return []
+        # ⚡ Step 2+3: সব range একসাথে parallel!
+        tasks = [fetch_numbers_for_range(client, today, gid, csrf) for gid in group_ids]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
 
-        # ── Step 2 & 3: প্রতিটা range-এর numbers ও SMS ──
-        for gid in group_ids:
-            try:
-                # Step 2: Numbers
-                r2 = await client.post(GETNUM_URL,
-                    data={'start':today,'end':today,'range':gid,'_token':csrf},
-                    headers=HEADERS)
-                soup2 = BeautifulSoup(r2.text,'html.parser')
+        all_msgs = []
+        for r in results:
+            if isinstance(r, list): all_msgs.extend(r)
 
-                # Number divs খোঁজা
-                num_els = soup2.select("div[onclick*='getDetialsNumber']")
-                if not num_els:
-                    num_els = soup2.find_all(string=re.compile(r'^\d{7,15}$'))
+        # Duplicate সরানো
+        seen, unique = set(), []
+        for m in all_msgs:
+            if m['id'] not in seen:
+                seen.add(m['id']); unique.append(m)
 
-                phone_numbers = []
-                for el in num_els:
-                    txt = el.get_text(strip=True) if hasattr(el,'get_text') else str(el).strip()
-                    if re.match(r'^\+?\d{7,15}$', txt.replace(' ','')):
-                        phone_numbers.append(re.sub(r'\D','',txt))
-
-                print(f"   📱 Range {gid}: {len(phone_numbers)} numbers")
-
-                # Step 3: SMS content প্রতিটা number-এর জন্য
-                for phone in phone_numbers:
-                    try:
-                        r3 = await client.post(GETSMS2_URL,
-                            data={'start':today,'end':today,
-                                  'Number':phone,'Range':gid,'_token':csrf},
-                            headers=HEADERS)
-                        soup3 = BeautifulSoup(r3.text,'html.parser')
-
-                        # Message content বের করা
-                        # ছবিতে দেখা: CLI + Message Content + Rev
-                        sms_cards = soup3.find_all('div', class_='card-body')
-                        if not sms_cards:
-                            sms_cards = soup3.find_all(['p','div'], class_=lambda c: c and 'mb-0' in c)
-
-                        for card in sms_cards:
-                            # SMS text খোঁজা
-                            sms_el = card.find('p', class_='mb-0') or card.find('p')
-                            if not sms_el:
-                                text_content = card.get_text(separator=' ', strip=True)
-                                if len(text_content) > 15 and not re.match(r'^[\d\s\.]+$', text_content):
-                                    sms_text = text_content
-                                else:
-                                    continue
-                            else:
-                                sms_text = sms_el.get_text(separator=' ', strip=True)
-
-                            if not sms_text or len(sms_text) < 10:
-                                continue
-                            if re.match(r'^[\d\s\.\,]+$', sms_text):
-                                continue
-
-                            service = get_service(sms_text)
-
-                            # CLI থেকেও service নেওয়ার চেষ্টা
-                            cli_el = soup3.find(string=re.compile(r'WhatsApp|Telegram|Facebook|Google|Instagram|Signal', re.I))
-                            if cli_el and service == "Unknown":
-                                service = get_service(str(cli_el))
-
-                            country, flag = get_country(phone)
-                            code = get_code(sms_text)
-                            uid  = f"{phone}-{sms_text[:60]}"
-                            ts   = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
-
-                            all_messages.append({
-                                "id":uid,"time":ts,"number":phone,
-                                "country":country,"flag":flag,
-                                "service":service,"code":code,"full_sms":sms_text
-                            })
-
-                    except Exception as e:
-                        print(f"   ⚠️ SMS fetch error for {phone}: {e}")
-                        continue
-
-            except Exception as e:
-                print(f"   ⚠️ Range {gid} error: {e}")
-                continue
-
-        print(f"   ✅ Total: {len(all_messages)} SMS fetched")
-        return all_messages
-
+        print(f"   ✅ Total: {len(unique)} SMS fetched")
+        return unique
     except Exception as e:
-        print(f"❌ Fetch error: {e}")
-        traceback.print_exc()
-        return []
+        print(f"❌ Fetch error: {e}"); traceback.print_exc(); return []
 
 # ===== TELEGRAM =====
 async def send_otp(bot, chat_id, msg):
@@ -353,54 +353,47 @@ async def send_otp(bot, chat_id, msg):
             InlineKeyboardButton("💬 GROUP",url="https://t.me/EarningHub6112"),
             InlineKeyboardButton("🤖 BOT",url="https://t.me/ah_method_number_bot"),
         ]]
-        await bot.send_message(chat_id=chat_id,text=text,
-            parse_mode='MarkdownV2',reply_markup=InlineKeyboardMarkup(kb))
+        await bot.send_message(chat_id=chat_id, text=text,
+            parse_mode='MarkdownV2', reply_markup=InlineKeyboardMarkup(kb))
     except Exception as e:
         print(f"❌ Send error to {chat_id}: {e}")
 
 # ===== COMMANDS =====
-async def start_cmd(u:Update,c:ContextTypes.DEFAULT_TYPE):
+async def start_cmd(u:Update, c:ContextTypes.DEFAULT_TYPE):
     if str(u.message.from_user.id) in ADMIN_IDS:
         await u.message.reply_text("✅ Bot running!\n/add_chat <id>\n/remove_chat <id>\n/list_chats")
-    else:
-        await u.message.reply_text("❌ Not authorized.")
+    else: await u.message.reply_text("❌ Not authorized.")
 
-async def add_chat_cmd(u:Update,c:ContextTypes.DEFAULT_TYPE):
+async def add_chat_cmd(u:Update, c:ContextTypes.DEFAULT_TYPE):
     if str(u.message.from_user.id) not in ADMIN_IDS: return
     try:
         cid=c.args[0]; chats=load_chats()
-        if cid not in chats:
-            chats.append(cid); save_chats(chats)
-            await u.message.reply_text(f"✅ Added: {cid}")
+        if cid not in chats: chats.append(cid); save_chats(chats); await u.message.reply_text(f"✅ Added: {cid}")
         else: await u.message.reply_text("Already exists.")
     except: await u.message.reply_text("Usage: /add_chat <id>")
 
-async def rm_chat_cmd(u:Update,c:ContextTypes.DEFAULT_TYPE):
+async def rm_chat_cmd(u:Update, c:ContextTypes.DEFAULT_TYPE):
     if str(u.message.from_user.id) not in ADMIN_IDS: return
     try:
         cid=c.args[0]; chats=load_chats()
-        if cid in chats:
-            chats.remove(cid); save_chats(chats)
-            await u.message.reply_text(f"✅ Removed: {cid}")
+        if cid in chats: chats.remove(cid); save_chats(chats); await u.message.reply_text(f"✅ Removed: {cid}")
         else: await u.message.reply_text("Not found.")
     except: await u.message.reply_text("Usage: /remove_chat <id>")
 
-async def list_cmd(u:Update,c:ContextTypes.DEFAULT_TYPE):
+async def list_cmd(u:Update, c:ContextTypes.DEFAULT_TYPE):
     if str(u.message.from_user.id) not in ADMIN_IDS: return
     chats=load_chats()
     await u.message.reply_text("📋 Chats:\n"+"\n".join(chats) if chats else "Empty.")
 
-# ===== ⚡ MAIN JOB =====
+# ===== MAIN JOB =====
 async def check_sms(context:ContextTypes.DEFAULT_TYPE):
     now = datetime.now(timezone.utc).strftime('%H:%M:%S')
     print(f"⚡ [{now}] Checking SMS...")
-
     cookies = load_session()
     async with httpx.AsyncClient(timeout=30.0, follow_redirects=True, cookies=cookies) as client:
         try:
             if not cookies:
                 if not await do_login(client): return
-
             csrf = await get_csrf(client)
             if not csrf:
                 print("⚠️ Session expired, re-logging...")
@@ -410,51 +403,35 @@ async def check_sms(context:ContextTypes.DEFAULT_TYPE):
                 if not csrf: print("❌ CSRF failed!"); return
 
             messages = await fetch_all_sms(client, csrf)
+            if messages is None: clear_session(); return
+            if not messages: print("✔️ No SMS today."); return
 
-            if messages is None:
-                clear_session(); return
-            if not messages:
-                print("✔️ No SMS today."); return
-
-            done  = load_ids()
-            chats = load_chats()
-            new   = 0
-
+            done=load_ids(); chats=load_chats(); new=0
             for msg in messages:
                 if msg['id'] not in done:
                     new += 1
                     print(f"✅ NEW: {msg['number']} | {msg['service']} | {msg['code']}")
-                    for cid in chats:
-                        await send_otp(context.bot, cid, msg)
+                    for cid in chats: await send_otp(context.bot, cid, msg)
                     save_id(msg['id'])
-
             if new > 0: print(f"📨 Sent {new} new OTP(s)!")
             else: print("✔️ No new OTP.")
-
         except Exception as e:
-            print(f"❌ Error: {e}")
-            traceback.print_exc()
-            clear_session()
+            print(f"❌ Error: {e}"); traceback.print_exc(); clear_session()
 
 # ===== MAIN =====
 def main():
     keep_alive()
-    print("🚀 Bot starting...")
-    print(f"⚡ 3-Step API flow:")
-    print(f"   1. getsms → ranges")
-    print(f"   2. getsms/number → numbers per range")
-    print(f"   3. getsms/number/sms → actual SMS content ⭐")
-    print(f"⚡ Interval: {INTERVAL}s")
-
+    print("🚀 Bot starting — PARALLEL MODE")
+    print(f"   4 ranges × 9 numbers = 36 requests")
+    print(f"   Sequential ~90s ❌  →  Parallel ~6s ✅")
+    print(f"   Interval: {INTERVAL}s")
     app = Application.builder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start_cmd))
     app.add_handler(CommandHandler("add_chat", add_chat_cmd))
     app.add_handler(CommandHandler("remove_chat", rm_chat_cmd))
     app.add_handler(CommandHandler("list_chats", list_cmd))
-    app.job_queue.run_repeating(
-        check_sms, interval=INTERVAL, first=2,
-        job_kwargs={"max_instances":1}
-    )
+    app.job_queue.run_repeating(check_sms, interval=INTERVAL, first=2,
+        job_kwargs={"max_instances":1})
     print("🤖 Bot is online!")
     app.run_polling()
 
