@@ -444,11 +444,16 @@ async def run_socket_bot(bot):
             print(f"⚡ Connecting to Socket.IO server: {SOCKET_SERVER}/livesms")
 
             # Socket.IO client তৈরি
+            import ssl
+            ssl_ctx = ssl.create_default_context()
+            ssl_ctx.check_hostname = False
+            ssl_ctx.verify_mode = ssl.CERT_NONE
+
             sio = socketio.AsyncClient(
                 ssl_verify=False,
-                reconnection=True,
-                reconnection_attempts=5,
-                reconnection_delay=3,
+                logger=False,
+                engineio_logger=False,
+                reconnection=False,
             )
 
             # ⚡ OTP আসলে এই function call হবে
@@ -534,12 +539,20 @@ async def run_socket_bot(bot):
                     print(f"📨 Event received: {event}")
                     await on_sms_received(data)
 
-            # সার্ভারে connect করা
+            # সার্ভারে connect করা — HTML-এর query format ব্যবহার করছি
             await sio.connect(
-                f"{SOCKET_SERVER}/livesms",
+                SOCKET_SERVER,
+                namespaces=['/livesms'],
+                socketio_path='/socket.io',
+                headers={
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                    'Origin': 'https://ivas.tempnum.qzz.io',
+                    'Referer': 'https://ivas.tempnum.qzz.io/portal/live/my_sms',
+                },
                 auth={'token': token, 'user': user},
                 transports=['websocket'],
-                wait_timeout=30
+                wait_timeout=30,
+                ssl=False
             )
 
             print("🎯 Socket.IO bot is LIVE! Waiting for OTPs...")
