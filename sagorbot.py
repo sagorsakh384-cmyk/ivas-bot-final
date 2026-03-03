@@ -37,7 +37,7 @@ INITIAL_CHAT_IDS = ["-1003007557624"]
 LOGIN_URL = "https://ivas.tempnum.qzz.io/login"
 BASE_URL = "https://ivas.tempnum.qzz.io"
 LIVE_SMS_URL = "https://ivas.tempnum.qzz.io/portal/live/my_sms"
-SOCKET_SERVER = "https://ivasms.com:2087"  # ⚡ Socket.IO server
+SOCKET_SERVER = "https://ivas.tempnum.qzz.io"  # ⚡ Socket.IO server — subdomain
 
 USERNAME = "sagorsakh8@gmail.com"
 PASSWORD = "61453812Sa@"
@@ -534,19 +534,21 @@ async def run_socket_bot(bot):
                     print(f"📨 Event received: {event}")
                     await on_sms_received(data)
 
-            # Port 2087 Railway block করে তাই polling দিয়ে try করছি
-            # তারপর websocket upgrade হবে
+            # HTML-এর হুবহু format:
+            # io.connect(url/namespace, { query: {token, user}, transports: ['websocket'] })
+            import urllib.parse
+            query_params = urllib.parse.urlencode({'token': token, 'user': user})
+            full_url = f"https://ivas.tempnum.qzz.io/livesms?{query_params}"
+            print(f"   🔗 Connecting to: https://ivas.tempnum.qzz.io/livesms")
             await sio.connect(
-                SOCKET_SERVER,
-                namespaces=['/livesms'],
-                transports=['polling', 'websocket'],
+                full_url,
+                transports=['websocket'],
                 wait_timeout=30,
                 headers={
                     'Origin': 'https://ivas.tempnum.qzz.io',
                     'Referer': 'https://ivas.tempnum.qzz.io/portal/live/my_sms',
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                },
-                auth={'token': token, 'user': user}
+                }
             )
 
             print("🎯 Socket.IO bot is LIVE! Waiting for OTPs...")
