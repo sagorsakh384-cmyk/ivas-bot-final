@@ -294,63 +294,65 @@ async def fetch_live_sms(client: httpx.AsyncClient, headers: dict):
         soup = BeautifulSoup(response.text, 'html.parser')
         messages = []
 
-        # Live SMS table থেকে data parse করা
-        # প্রতিটা row-তে: নম্বর, service, SMS content আছে
-        table_rows = soup.select('table tbody tr')
 
-        if not table_rows:
-            # Alternative: div-based layout check
-            live_items = soup.select('.live-sms-item, [class*="sms"], [class*="message"]')
+        # ছবিতে দেখা table structure:
+        # কলাম ১: পতাকা + দেশ (SLOVENIA 359) + নম্বর (38671428269) আলাদা লাইনে
+        # কলাম ২: Service (WhatsApp/Telegram etc)
+        # কলাম ৩: Paid
+        # কলাম ৪: Limit
+        # কলাম ৫: Message content
+        table_rows = soup.select('table tbody tr')
+        print(f"   📋 Found {len(table_rows)} rows in Live SMS table")
 
         for row in table_rows:
             try:
                 cells = row.find_all('td')
-                if len(cells) < 5:
+                if len(cells) < 3:
                     continue
 
-                # ✅ Column 1: পতাকা + দেশ + নম্বর
-                # cell[0] তে দেশের নাম এবং নম্বর আছে
-                cell0_text = cells[0].get_text(separator=' ', strip=True)
+                # কলাম ১ থেকে নম্বর বের করা
+                cell0_lines = cells[0].get_text(separator='\n', strip=True).split('\n')
+                cell0_lines = [l.strip() for l in cell0_lines if l.strip()]
 
-                # নম্বর খোঁজা — ৭-১৫ ডিজিটের number
-                number_match = re.search(r'\b(\d{7,15})\b', cell0_text)
-                if not number_match:
+                phone_number = None
+                for line in cell0_lines:
+                    if re.match(r'^\+?\d{7,15}$', line.replace(' ', '')):
+                        phone_number = line.replace('+', '').strip()
+                        break
+
+                if not phone_number:
+                    cell0_full = cells[0].get_text(separator=' ', strip=True)
+                    nm = re.search(r'\b(\d{7,15})\b', cell0_full)
+                    if nm:
+                        phone_number = nm.group(1)
+
+                if not phone_number:
                     continue
-                phone_number = number_match.group(1)
 
-                # ✅ Column 2: Service name (WhatsApp, Telegram ইত্যাদি)
-                sid_text = cells[1].get_text(separator=' ', strip=True)
+                # কলাম ২ থেকে Service নেওয়া
+                sid_text = cells[1].get_text(strip=True).strip() if len(cells) > 1 else ""
 
-                # ✅ Column 5 (index 4): Message content
-                sms_text = cells[4].get_text(separator=' ', strip=True)
+                # শেষ কলাম থেকে SMS content
+                sms_text = cells[-1].get_text(separator=' ', strip=True)
                 if not sms_text or len(sms_text) < 3:
                     continue
 
+                print(f"   📱 {phone_number} | {sid_text} | {sms_text[:40]}...")
+
                 date_str = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
                 country_name, flag = parse_country_from_number(phone_number)
-
-                # Service — প্রথমে SID column দেখো, তারপর SMS text
                 service = sid_text if sid_text else parse_service_from_sms(sms_text)
-                if not service or service == "Unknown":
-                    service = parse_service_from_sms(sms_text)
-
                 code = parse_code_from_sms(sms_text)
                 unique_id = f"{phone_number}-{sms_text}"
 
                 messages.append({
-                    "id": unique_id,
-                    "time": date_str,
-                    "number": phone_number,
-                    "country": country_name,
-                    "flag": flag,
-                    "service": service,
-                    "code": code,
-                    "full_sms": sms_text
+                    "id": unique_id, "time": date_str, "number": phone_number,
+                    "country": country_name, "flag": flag, "service": service,
+                    "code": code, "full_sms": sms_text
                 })
-
             except Exception as e:
+                print(f"⚠️ Row error: {e}")
                 continue
-
         return messages
 
     except httpx.RequestError as e:
