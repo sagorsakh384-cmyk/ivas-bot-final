@@ -37,7 +37,7 @@ INITIAL_CHAT_IDS = ["-1003007557624"]
 LOGIN_URL = "https://ivas.tempnum.qzz.io/login"
 BASE_URL = "https://ivas.tempnum.qzz.io"
 LIVE_SMS_URL = "https://ivas.tempnum.qzz.io/portal/live/my_sms"
-SOCKET_SERVER = "https://ivasms.com:2087"  # ⚡ Socket.IO server
+SOCKET_SERVER = "https://ivas.tempnum.qzz.io/portal/live/my_sms"  # ⚡ Socket.IO server
 
 USERNAME = "sagorsakh384@gmail.com"
 PASSWORD = "61453812Sa@"
