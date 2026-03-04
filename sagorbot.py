@@ -16,7 +16,7 @@ def keep_alive():
     t.daemon = True; t.start()
 
 # ===== CONFIG =====
-BOT_TOKEN      = "8393297595:AAEksSfupLmn5qeBxjoGT3c9IzaJaLI6mck"
+BOT_TOKEN      = "8675806338:AAE7JnxhCBOmgGnJ6UApFqca_9qAcI2M4hc"
 ADMIN_IDS      = ["7095358778"]
 INITIAL_CHATS  = ["-1003719868322"]
 BASE_URL       = "https://ivas.tempnum.qzz.io"
