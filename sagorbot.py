@@ -18,7 +18,7 @@ def keep_alive():
 # ===== CONFIG =====
 BOT_TOKEN      = "8393297595:AAEksSfupLmn5qeBxjoGT3c9IzaJaLI6mck"
 ADMIN_IDS      = ["7095358778"]
-INITIAL_CHATS  = ["-1003007557624"]
+INITIAL_CHATS  = ["-1003719868322"]
 BASE_URL       = "https://ivas.tempnum.qzz.io"
 LOGIN_URL      = f"{BASE_URL}/login"
 SMS_PAGE_URL   = f"{BASE_URL}/portal/sms/received"
@@ -27,7 +27,7 @@ GETNUM_URL     = f"{BASE_URL}/portal/sms/received/getsms/number"
 GETSMS2_URL    = f"{BASE_URL}/portal/sms/received/getsms/number/sms"
 USERNAME       = "sagorsakh384@gmail.com"
 PASSWORD       = "61453812Sa@"
-INTERVAL       = 5
+INTERVAL       = 10
 STATE_FILE     = "processed.json"
 CHATS_FILE     = "chats.json"
 SESSION_FILE   = "session.pkl"
@@ -116,6 +116,7 @@ SERVICE_EMOJI = {
     "Signal":"🔐","Viber":"📞","Reddit":"👽","Unknown":"❓",
 }
 
+# ===== HELPERS =====
 def get_country(number):
     n = number.lstrip("+0")
     for l in [4,3,2,1]:
@@ -132,9 +133,26 @@ def get_code(text):
     m = re.search(r'(\d{3}-\d{3})',text) or re.search(r'\b(\d{4,8})\b',text)
     return m.group(1) if m else "N/A"
 
+def mask_number(phone):
+    """
+    স্ক্রিনশটের মতো মাঝের digits mask করা
+    221767***007 → 221767ⓎⓄⓊ007
+    """
+    if len(phone) <= 9:
+        return phone
+    # প্রথম ৬ + mask + শেষ ৩
+    start = phone[:6]
+    end   = phone[-3:]
+    mid_len = len(phone) - 9
+    # mask characters — ⓎⓄⓊ style
+    mask_chars = ['Ⓨ','Ⓞ','Ⓤ','Ⓐ','Ⓑ','Ⓒ','Ⓓ']
+    mask = ''.join(mask_chars[:mid_len]) if mid_len <= 7 else '●' * mid_len
+    return f"{start}{mask}{end}"
+
 def esc(text):
     return re.sub(r'([\_\*\[\]\(\)\~\`\>\#\+\-\=\|\{\}\.\!])',r'\\\1',str(text))
 
+# ===== STATE =====
 def load_ids():
     try: return set(json.load(open(STATE_FILE))) if os.path.exists(STATE_FILE) else set()
     except: return set()
@@ -171,6 +189,7 @@ HEADERS = {
     'X-Requested-With':'XMLHttpRequest',
 }
 
+# ===== LOGIN =====
 async def do_login(client):
     try:
         page = await client.get(LOGIN_URL, headers=HEADERS)
@@ -205,15 +224,12 @@ async def fetch_sms_for_number(client, today, phone, gid, csrf):
         soup = BeautifulSoup(r.text,'html.parser')
         results = []
 
-        # CLI / service খোঁজা
         cli_el = soup.find(string=re.compile(
             r'WhatsApp|Telegram|Facebook|Google|Instagram|Signal|Viber|TikTok|Snapchat', re.I))
 
-        # card-body থেকে SMS text
         cards = soup.find_all('div', class_='card-body')
 
         if not cards:
-            # Fallback — full text থেকে
             full_text = soup.get_text(separator=' ', strip=True)
             mc_idx = full_text.find('Message Content')
             if mc_idx > 0:
@@ -263,7 +279,6 @@ async def fetch_numbers_for_range(client, today, gid, csrf):
             t = el.get_text(strip=True)
             if re.match(r'^\+?\d{7,15}$', t.replace(' ','')):
                 phones.append(re.sub(r'\D','',t))
-
         if not phones:
             for s in soup.stripped_strings:
                 s = s.strip()
@@ -271,11 +286,9 @@ async def fetch_numbers_for_range(client, today, gid, csrf):
                     phones.append(re.sub(r'\D','',s))
 
         phones = list(set(phones))
-        print(f"   📱 Range {gid}: {len(phones)} numbers → fetching parallel...")
-
+        print(f"   📱 Range {gid}: {len(phones)} numbers")
         if not phones: return []
 
-        # ⚡ সব নম্বরের SMS একসাথে!
         tasks = [fetch_sms_for_number(client, today, p, gid, csrf) for p in phones]
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
@@ -291,14 +304,12 @@ async def fetch_numbers_for_range(client, today, gid, csrf):
 async def fetch_all_sms(client, csrf):
     today = datetime.now().strftime('%Y-%m-%d')
     try:
-        # Step 1: Range list
         r1 = await client.post(GETSMS_URL,
             data={'from':today,'to':today,'_token':csrf},
             headers=HEADERS, timeout=15.0)
         if 'login' in str(r1.url): return None
 
         soup1 = BeautifulSoup(r1.text,'html.parser')
-
         group_ids = []
         for el in soup1.find_all(onclick=True):
             m = re.search(r"getDetials\(['\"](.+?)['\"]\)", el.get('onclick',''))
@@ -316,7 +327,6 @@ async def fetch_all_sms(client, csrf):
         print(f"   📦 Found {len(group_ids)} ranges: {group_ids}")
         if not group_ids: return []
 
-        # ⚡ Step 2+3: সব range একসাথে parallel!
         tasks = [fetch_numbers_for_range(client, today, gid, csrf) for gid in group_ids]
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
@@ -324,7 +334,6 @@ async def fetch_all_sms(client, csrf):
         for r in results:
             if isinstance(r, list): all_msgs.extend(r)
 
-        # Duplicate সরানো
         seen, unique = set(), []
         for m in all_msgs:
             if m['id'] not in seen:
@@ -335,55 +344,91 @@ async def fetch_all_sms(client, csrf):
     except Exception as e:
         print(f"❌ Fetch error: {e}"); traceback.print_exc(); return []
 
-# ===== TELEGRAM =====
+# ===== ⚡ TELEGRAM — স্ক্রিনশটের হুবহু format =====
 async def send_otp(bot, chat_id, msg):
     try:
-        emoji = SERVICE_EMOJI.get(msg['service'],'❓')
+        emoji   = SERVICE_EMOJI.get(msg['service'], '❓')
+        masked  = mask_number(msg['number'])
+
         text = (
-            f"🔔 *You have successfully received OTP*\n\n"
-            f"📞 *Number:* `{esc(msg['number'])}`\n"
+            f"🔔 *New OTP Received*\n\n"
+            f"📞 *Number:* `{esc(masked)}`\n"
             f"🔑 *Code:* `{esc(msg['code'])}`\n"
             f"🏆 *Service:* {emoji} {esc(msg['service'])}\n"
             f"🌎 *Country:* {esc(msg['country'])} {msg['flag']}\n"
             f"⏳ *Time:* `{esc(msg['time'])}`\n\n"
-            f"💬 *Message:*\n```\n{msg['full_sms']}\n```"
+            f"💬 *Message:*\n`{esc(msg['full_sms'])}`"
         )
-        kb = [[
-            InlineKeyboardButton("📢 CHANNEL",url="https://t.me/blackotpnum"),
-            InlineKeyboardButton("💬 GROUP",url="https://t.me/EarningHub6112"),
-            InlineKeyboardButton("🤖 BOT",url="https://t.me/ah_method_number_bot"),
-        ]]
-        await bot.send_message(chat_id=chat_id, text=text,
-            parse_mode='MarkdownV2', reply_markup=InlineKeyboardMarkup(kb))
+
+        # স্ক্রিনশটের মতো ৩টা button — ২ row
+        kb = [
+            [
+                InlineKeyboardButton("🤖 Number Bot",     url="https://t.me/rising_number_bot"),
+                InlineKeyboardButton("📞 Number Channel", url="https://t.me/rising_number_channel"),
+            ],
+            [
+                InlineKeyboardButton("📢 Main Channel",      url="https://t.me/rising_method_hub"),
+            ]
+        ]
+        await bot.send_message(
+            chat_id=chat_id,
+            text=text,
+            parse_mode='MarkdownV2',
+            reply_markup=InlineKeyboardMarkup(kb)
+        )
     except Exception as e:
         print(f"❌ Send error to {chat_id}: {e}")
+        # Fallback — plain text
+        try:
+            plain = (
+                f"🔔 New OTP Received\n\n"
+                f"📞 Number: {mask_number(msg['number'])}\n"
+                f"🔑 Code: {msg['code']}\n"
+                f"🏆 Service: {msg['service']}\n"
+                f"🌎 Country: {msg['country']} {msg['flag']}\n"
+                f"⏳ Time: {msg['time']}\n\n"
+                f"💬 Message:\n{msg['full_sms']}"
+            )
+            await bot.send_message(chat_id=chat_id, text=plain)
+        except Exception as e2:
+            print(f"❌ Fallback error: {e2}")
 
 # ===== COMMANDS =====
 async def start_cmd(u:Update, c:ContextTypes.DEFAULT_TYPE):
     if str(u.message.from_user.id) in ADMIN_IDS:
-        await u.message.reply_text("✅ Bot running!\n/add_chat <id>\n/remove_chat <id>\n/list_chats")
-    else: await u.message.reply_text("❌ Not authorized.")
+        await u.message.reply_text(
+            "✅ Bot running!\n\n"
+            "/add_chat <id> — chat যোগ করুন\n"
+            "/remove_chat <id> — chat সরান\n"
+            "/list_chats — সব chat দেখুন"
+        )
+    else:
+        await u.message.reply_text("❌ Not authorized.")
 
 async def add_chat_cmd(u:Update, c:ContextTypes.DEFAULT_TYPE):
     if str(u.message.from_user.id) not in ADMIN_IDS: return
     try:
-        cid=c.args[0]; chats=load_chats()
-        if cid not in chats: chats.append(cid); save_chats(chats); await u.message.reply_text(f"✅ Added: {cid}")
-        else: await u.message.reply_text("Already exists.")
-    except: await u.message.reply_text("Usage: /add_chat <id>")
+        cid = c.args[0]; chats = load_chats()
+        if cid not in chats:
+            chats.append(cid); save_chats(chats)
+            await u.message.reply_text(f"✅ Added: {cid}")
+        else: await u.message.reply_text("⚠️ Already exists.")
+    except: await u.message.reply_text("Usage: /add_chat <chat_id>")
 
 async def rm_chat_cmd(u:Update, c:ContextTypes.DEFAULT_TYPE):
     if str(u.message.from_user.id) not in ADMIN_IDS: return
     try:
-        cid=c.args[0]; chats=load_chats()
-        if cid in chats: chats.remove(cid); save_chats(chats); await u.message.reply_text(f"✅ Removed: {cid}")
-        else: await u.message.reply_text("Not found.")
-    except: await u.message.reply_text("Usage: /remove_chat <id>")
+        cid = c.args[0]; chats = load_chats()
+        if cid in chats:
+            chats.remove(cid); save_chats(chats)
+            await u.message.reply_text(f"✅ Removed: {cid}")
+        else: await u.message.reply_text("❌ Not found.")
+    except: await u.message.reply_text("Usage: /remove_chat <chat_id>")
 
 async def list_cmd(u:Update, c:ContextTypes.DEFAULT_TYPE):
     if str(u.message.from_user.id) not in ADMIN_IDS: return
-    chats=load_chats()
-    await u.message.reply_text("📋 Chats:\n"+"\n".join(chats) if chats else "Empty.")
+    chats = load_chats()
+    await u.message.reply_text("📋 Active Chats:\n" + "\n".join(chats) if chats else "Empty.")
 
 # ===== MAIN JOB =====
 async def check_sms(context:ContextTypes.DEFAULT_TYPE):
@@ -406,13 +451,15 @@ async def check_sms(context:ContextTypes.DEFAULT_TYPE):
             if messages is None: clear_session(); return
             if not messages: print("✔️ No SMS today."); return
 
-            done=load_ids(); chats=load_chats(); new=0
+            done = load_ids(); chats = load_chats(); new = 0
             for msg in messages:
                 if msg['id'] not in done:
                     new += 1
                     print(f"✅ NEW: {msg['number']} | {msg['service']} | {msg['code']}")
-                    for cid in chats: await send_otp(context.bot, cid, msg)
+                    for cid in chats:
+                        await send_otp(context.bot, cid, msg)
                     save_id(msg['id'])
+
             if new > 0: print(f"📨 Sent {new} new OTP(s)!")
             else: print("✔️ No new OTP.")
         except Exception as e:
@@ -422,16 +469,16 @@ async def check_sms(context:ContextTypes.DEFAULT_TYPE):
 def main():
     keep_alive()
     print("🚀 Bot starting — PARALLEL MODE")
-    print(f"   4 ranges × 9 numbers = 36 requests")
-    print(f"   Sequential ~90s ❌  →  Parallel ~6s ✅")
     print(f"   Interval: {INTERVAL}s")
     app = Application.builder().token(BOT_TOKEN).build()
-    app.add_handler(CommandHandler("start", start_cmd))
-    app.add_handler(CommandHandler("add_chat", add_chat_cmd))
+    app.add_handler(CommandHandler("start",       start_cmd))
+    app.add_handler(CommandHandler("add_chat",    add_chat_cmd))
     app.add_handler(CommandHandler("remove_chat", rm_chat_cmd))
-    app.add_handler(CommandHandler("list_chats", list_cmd))
-    app.job_queue.run_repeating(check_sms, interval=INTERVAL, first=2,
-        job_kwargs={"max_instances":1})
+    app.add_handler(CommandHandler("list_chats",  list_cmd))
+    app.job_queue.run_repeating(
+        check_sms, interval=INTERVAL, first=2,
+        job_kwargs={"max_instances":1}
+    )
     print("🤖 Bot is online!")
     app.run_polling()
 
