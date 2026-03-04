@@ -144,7 +144,7 @@ def mask_number(phone):
     start = phone[:6]
     end   = phone[-3:]
     mid_len = len(phone) - 9
-    # mask characters — ⓎⓄⓊ style
+    # mask characters — 𝐑𝐑𝐑 style
     mask_chars = ['Ⓨ','Ⓞ','Ⓤ','Ⓐ','Ⓑ','Ⓒ','Ⓓ']
     mask = ''.join(mask_chars[:mid_len]) if mid_len <= 7 else '●' * mid_len
     return f"{start}{mask}{end}"
