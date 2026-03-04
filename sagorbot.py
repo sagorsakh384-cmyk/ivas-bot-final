@@ -136,7 +136,7 @@ def get_code(text):
 def mask_number(phone):
     """
     স্ক্রিনশটের মতো মাঝের digits mask করা
-    221767***007 → 221767ⓎⓄⓊ007
+    221767***007 → 221767𝐑𝐑𝐑007
     """
     if len(phone) <= 9:
         return phone
@@ -145,7 +145,7 @@ def mask_number(phone):
     end   = phone[-3:]
     mid_len = len(phone) - 9
     # mask characters — 𝐑𝐑𝐑 style
-    mask_chars = ['Ⓨ','Ⓞ','Ⓤ','Ⓐ','Ⓑ','Ⓒ','Ⓓ']
+    mask_chars = ['𝐑','𝐑','𝐑','Ⓐ','Ⓑ','Ⓒ','Ⓓ']
     mask = ''.join(mask_chars[:mid_len]) if mid_len <= 7 else '●' * mid_len
     return f"{start}{mask}{end}"
 
