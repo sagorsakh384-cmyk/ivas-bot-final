@@ -16,14 +16,14 @@ def keep_alive():
 
 BOT_TOKEN      = "8393297595:AAEksSfupLmn5qeBxjoGT3c9IzaJaLI6mck"
 ADMIN_IDS      = ["7095358778"]
-INITIAL_CHATS  = ["-1003007557624"]
+INITIAL_CHATS  = ["-1003719868322"]
 BASE_URL       = "https://ivas.tempnum.qzz.io"
 LOGIN_URL      = f"{BASE_URL}/login"
 SMS_PAGE_URL   = f"{BASE_URL}/portal/sms/received"
 GETSMS_URL     = f"{BASE_URL}/portal/sms/received/getsms"
 GETNUM_URL     = f"{BASE_URL}/portal/sms/received/getsms/number"
 GETSMS2_URL    = f"{BASE_URL}/portal/sms/received/getsms/number/sms"
-USERNAME       = "sagorsakh8@gmail.com"
+USERNAME       = "sagorsakh384@gmail.com"
 PASSWORD       = "61453812Sa@"
 INTERVAL       = 12
 STATE_FILE     = "processed.json"
