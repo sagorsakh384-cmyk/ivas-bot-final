@@ -14,7 +14,7 @@ def keep_alive():
     t = threading.Thread(target=lambda: flask_app.run(host="0.0.0.0", port=8080))
     t.daemon = True; t.start()
 
-BOT_TOKEN      = "8393297595:AAEksSfupLmn5qeBxjoGT3c9IzaJaLI6mck"
+BOT_TOKEN      = "8675806338:AAE7JnxhCBOmgGnJ6UApFqca_9qAcI2M4hc"
 ADMIN_IDS      = ["7095358778"]
 INITIAL_CHATS  = ["-1003719868322"]
 BASE_URL       = "https://ivas.tempnum.qzz.io"
@@ -25,7 +25,7 @@ GETNUM_URL     = f"{BASE_URL}/portal/sms/received/getsms/number"
 GETSMS2_URL    = f"{BASE_URL}/portal/sms/received/getsms/number/sms"
 USERNAME       = "sagorsakh384@gmail.com"
 PASSWORD       = "61453812Sa@"
-INTERVAL       = 12
+INTERVAL       = 10
 STATE_FILE     = "processed.json"
 CHATS_FILE     = "chats.json"
 SESSION_FILE   = "session.pkl"
@@ -361,7 +361,7 @@ async def fetch_all_sms(client, csrf):
 async def send_otp(bot, chat_id, msg):
     try:
         emoji  = SERVICE_EMOJI.get(msg['service'], '❓')
-        masked = mask_number(msg['number'])
+        masked = msg["number"]
         text = (
             f"🔔 *New OTP Received*\n\n"
             f"📞 *Number:* `{esc(masked)}`\n"
