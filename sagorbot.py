@@ -10,7 +10,7 @@ SMS_PAGE    = f"{BASE_URL}/portal/sms/received"
 GETSMS_URL  = f"{BASE_URL}/portal/sms/received/getsms"
 BOT_TOKEN   = "8393297595:AAEksSfupLmn5qeBxjoGT3c9IzaJaLI6mck"
 ADMIN_ID    = "7095358778"
-USERNAME    = "sagorsakh8@gmail.com"
+USERNAME    = "sagorsakh384@gmail.com"
 PASSWORD    = "61453812Sa@"
 
 HEADERS = {
