@@ -372,9 +372,9 @@ async def send_otp(bot, chat_id, msg):
             f"💬 *Message:*\n`{esc(msg['full_sms'])}`"
         )
         kb = [
-            [InlineKeyboardButton("🤖 Number Bot", url="https://t.me/ah_method_number_bot"),
-             InlineKeyboardButton("📢 Number Channel", url="https://t.me/blackotpnum")],
-            [InlineKeyboardButton("🛠 Developer", url="https://t.me/EarningHub6112")]
+            [InlineKeyboardButton("🤖 Number Bot", url="https://t.me/rising_number_bot"),
+             InlineKeyboardButton("📢 Number Channel", url="https://t.me/rising_number_channel")],
+            [InlineKeyboardButton("🛠 Developer", url="https://t.me/sadhin8miya")]
         ]
         await bot.send_message(chat_id=chat_id, text=text,
             parse_mode='MarkdownV2', reply_markup=InlineKeyboardMarkup(kb))
