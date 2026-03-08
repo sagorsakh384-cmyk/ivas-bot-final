@@ -16,14 +16,14 @@ def keep_alive():
 
 BOT_TOKEN      = "8393297595:AAEksSfupLmn5qeBxjoGT3c9IzaJaLI6mck"
 ADMIN_IDS      = ["7095358778"]
-INITIAL_CHATS  = ["-1003719868322"]
+INITIAL_CHATS  = ["-1003007557624"]
 BASE_URL       = "https://ivas.tempnum.qzz.io"
 LOGIN_URL      = f"{BASE_URL}/login"
 SMS_PAGE_URL   = f"{BASE_URL}/portal/sms/received"
 GETSMS_URL     = f"{BASE_URL}/portal/sms/received/getsms"
 GETNUM_URL     = f"{BASE_URL}/portal/sms/received/getsms/number"
 GETSMS2_URL    = f"{BASE_URL}/portal/sms/received/getsms/number/sms"
-USERNAME       = "sagorsakh384@gmail.com"
+USERNAME       = "sagorsakh8@gmail.com"
 PASSWORD       = "61453812Sa@"
 INTERVAL       = 12
 STATE_FILE     = "processed.json"
@@ -128,9 +128,12 @@ def get_service(sender, msg_text):
     return "Unknown"
 
 def get_code(text):
-    m = (re.search(r'\b([A-Z0-9]{4,8}\+[A-Za-z0-9]{3,8})\b', text) or
-         re.search(r'(\d{3}-\d{3})', text) or
-         re.search(r'\b(\d{4,8})\b', text))
+    # <#> routing info বাদ দেওয়া, numeric OTP আগে খোঁজা
+    clean = re.sub(r"<#>[^0-9]*", "", text)
+    m = (re.search(r"(\d{3}-\d{3})", clean) or
+         re.search(r"\b(\d{5,8})\b", clean) or
+         re.search(r"\b(\d{4})\b", clean) or
+         re.search(r"\b([A-Z0-9]{4,8}\+[A-Za-z0-9]{3,8})\b", text))
     return m.group(1) if m else "N/A"
 
 def mask_number(phone):
