@@ -305,9 +305,29 @@ async def fetch_all_sms(client, csrf):
         print(f"   🔍 .smsp:     {len(soup_dbg.find_all(class_='smsp'))}")
         print(f"   🔍 .cli-tag:  {len(soup_dbg.find_all(class_='cli-tag'))}")
         print(f"   🔍 .msg-text: {len(soup_dbg.find_all(class_='msg-text'))}")
-        # HTML এর শুরু দেখা
-        preview = html[:300].replace('\n',' ')
-        print(f"   📝 Preview: {preview}")
+        # toggleRange function খোঁজা
+        import re as _re
+        tr_match = _re.search(r'function toggleR\w+.*?(?=function\s|\Z)', html, _re.DOTALL)
+        if tr_match:
+            print(f"   🔎 toggleFn: {tr_match.group(0)[:400].replace(chr(10),' ')}")
+        else:
+            print("   ⚠️ toggleRange NOT in response")
+
+        # সব url/ajax খোঁজা
+        urls = _re.findall(r"url\s*[:\=]\s*['\"]([^'\"]{5,})['\"]", html)
+        print(f"   🌐 URLs: {urls}")
+
+        # onclick values
+        onclicks = [el.get('onclick','') for el in soup_dbg.find_all(onclick=True)]
+        print(f"   👆 onclicks: {onclicks[:5]}")
+
+        # sub div content
+        sub_div = soup_dbg.find(class_='sub')
+        if sub_div:
+            print(f"   📦 .sub HTML: {str(sub_div)[:300].replace(chr(10),' ')}")
+
+        # HTML preview
+        print(f"   📝 Preview: {html[:200].replace(chr(10),' ')}")
 
         messages = parse_getsms_html(html)
 
