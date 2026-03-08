@@ -16,7 +16,7 @@ def keep_alive():
 
 BOT_TOKEN      = "8675806338:AAE7JnxhCBOmgGnJ6UApFqca_9qAcI2M4hc"
 ADMIN_IDS      = ["7095358778"]
-INITIAL_CHATS  = ["-1003719868322"]
+INITIAL_CHATS  = ["-1003796890472"]
 BASE_URL       = "https://ivas.tempnum.qzz.io"
 LOGIN_URL      = f"{BASE_URL}/login"
 SMS_PAGE_URL   = f"{BASE_URL}/portal/sms/received"
@@ -373,8 +373,8 @@ async def send_otp(bot, chat_id, msg):
         )
         kb = [
             [InlineKeyboardButton("🤖 Number Bot", url="https://t.me/rising_number_bot"),
-             InlineKeyboardButton("📢 Number Channel", url="https://t.me/rising_number_channel")],
-            [InlineKeyboardButton("🛠 Developer", url="https://t.me/sadhin8miya")]
+             InlineKeyboardButton("🌐 Number Channel", url="https://t.me/rising_number_channel")],
+            [InlineKeyboardButton("📢 Main Channel", url="https://t.me/rising_method_hub")]
         ]
         await bot.send_message(chat_id=chat_id, text=text,
             parse_mode='MarkdownV2', reply_markup=InlineKeyboardMarkup(kb))
