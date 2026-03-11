@@ -14,17 +14,17 @@ def keep_alive():
     t = threading.Thread(target=lambda: flask_app.run(host="0.0.0.0", port=8080))
     t.daemon = True; t.start()
 
-BOT_TOKEN      = "8675806338:AAE7JnxhCBOmgGnJ6UApFqca_9qAcI2M4hc"
-ADMIN_IDS      = ["7095358778"]
-INITIAL_CHATS  = ["-1003796890472"]
+BOT_TOKEN      = "8669636622:AAHitSlPVN_IsjLRN20e1OzU61IlLb9GERo"
+ADMIN_IDS      = ["6820798198"]
+INITIAL_CHATS  = ["-1003701215218"]
 BASE_URL       = "https://ivas.tempnum.qzz.io"
 LOGIN_URL      = f"{BASE_URL}/login"
 SMS_PAGE_URL   = f"{BASE_URL}/portal/sms/received"
 GETSMS_URL     = f"{BASE_URL}/portal/sms/received/getsms"
 GETNUM_URL     = f"{BASE_URL}/portal/sms/received/getsms/number"
 GETSMS2_URL    = f"{BASE_URL}/portal/sms/received/getsms/number/sms"
-USERNAME       = "sagorsakh384@gmail.com"
-PASSWORD       = "61453812Sa@"
+USERNAME       = "mdshakayath8@gmail.com"
+PASSWORD       = "shakauth@50"
 INTERVAL       = 5
 STATE_FILE     = "processed.json"
 CHATS_FILE     = "chats.json"
@@ -372,9 +372,9 @@ async def send_otp(bot, chat_id, msg):
             f"💬 *Message:*\n`{esc(msg['full_sms'])}`"
         )
         kb = [
-            [InlineKeyboardButton("🤖 Number Bot", url="https://t.me/rising_number_bot"),
-             InlineKeyboardButton("🌐 Number Channel", url="https://t.me/rising_number_channel")],
-            [InlineKeyboardButton("📢 Main Channel", url="https://t.me/rising_method_hub")]
+            [InlineKeyboardButton("🤖 Number Bot", url="https://t.me/FBDEALZONE_BOT"),
+             InlineKeyboardButton("🌐 Number Channel", url="https://t.me/numbarchannel10")],
+            [InlineKeyboardButton("📢 Main Channel", url="https://t.me/FBDEALZONEofficial")]
         ]
         await bot.send_message(chat_id=chat_id, text=text,
             parse_mode='MarkdownV2', reply_markup=InlineKeyboardMarkup(kb))
